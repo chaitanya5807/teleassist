@@ -37,10 +37,41 @@ WIKIPEDIA_TITLES = (
     "Short Message Service",
     "Prepaid mobile phone",
     "Postpaid mobile phone",
-    "Electronic identification",
+    "Know your customer",
     "Telecommunications satellites",
     "Telephone numbering plan",
     "Wireless communication",
+    "Radio spectrum",
+    "Spectrum auction",
+    "Telephone solicitation",
+    "Call detail record",
+    "Internet service provider",
+    "Telecommunications equipment",
+    "Mobile virtual network operator",
+    "International Mobile Subscriber Identity",
+    "International Mobile Equipment Identity",
+    "Embedded SIM",
+    "Mobile broadband",
+    "Internet in India",
+    "Data roaming",
+    "Roaming",
+    "Telephone",
+    "Telephone call",
+    "Customer service",
+    "Telephone exchange",
+    "Public switched telephone network",
+    "Landline",
+    "Wireless Internet service provider",
+    "Communications satellite",
+    "Radio communication",
+    "Electromagnetic spectrum",
+    "Wi-Fi",
+    "LTE (telecommunication)",
+    "Telecommunications policy of India",
+    "Consumer protection",
+    "Do Not Call Registry",
+    "Do Not Disturb (telecommunications)",
+    "Unsolicited commercial communication",
 )
 
 
@@ -73,6 +104,7 @@ def download_sources(
             "url": page_url,
             "retrieved_at": retrieved_at,
             "license_note": WIKIPEDIA_LICENSE,
+            "source_type": "wikipedia",
             "status": "failed",
         }
         try:
@@ -106,13 +138,16 @@ def download_sources(
             )
             file_name = _safe_filename(actual_title)
             (raw_dir / file_name).write_text(text + "\n", encoding="utf-8")
-            record.update({"title": actual_title, "status": "downloaded", "file": file_name})
+            record.update(
+                {"title": actual_title, "url": page_url, "status": "downloaded", "file": file_name}
+            )
             docs.append(
                 {
                     "title": actual_title,
                     "source": page_url,
                     "retrieved_at": retrieved_at,
                     "license_note": WIKIPEDIA_LICENSE,
+                    "source_type": "wikipedia",
                     "text": text,
                 }
             )
@@ -120,6 +155,27 @@ def download_sources(
             record["error"] = str(exc)
             LOGGER.warning("Skipping Wikipedia source %s: %s", title, exc)
         records.append(record)
+
+    manual_dir = raw_dir / "manual"
+    manual_paths = sorted(manual_dir.rglob("*")) if manual_dir.exists() else []
+    for path in manual_paths:
+        if not path.is_file():
+            continue
+        if path.suffix.lower() not in {".pdf", ".html", ".htm", ".txt"}:
+            LOGGER.warning("Skipping unsupported manual document %s", path)
+            continue
+        relative_path = path.relative_to(raw_dir).as_posix()
+        records.append(
+            {
+                "title": path.stem,
+                "source": relative_path,
+                "file": relative_path,
+                "retrieved_at": datetime.now(UTC).isoformat(),
+                "license_note": "User-provided local document",
+                "source_type": "manual",
+                "status": "available",
+            }
+        )
 
     manifest = {
         "generated_at": datetime.now(UTC).isoformat(),

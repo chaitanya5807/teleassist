@@ -19,7 +19,9 @@ def clean_text(text: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 
-def _markdown_sections(text: str, source: str) -> list[dict[str, Any]]:
+def _markdown_sections(
+    text: str, source: str, source_type: str
+) -> list[dict[str, Any]]:
     sections: list[dict[str, Any]] = []
     title = Path(source).stem.replace("_", " ")
     heading = title
@@ -32,7 +34,12 @@ def _markdown_sections(text: str, source: str) -> list[dict[str, Any]]:
                 sections.append(
                     {
                         "text": section_text,
-                        "metadata": {"source": source, "page": None, "section": heading},
+                        "metadata": {
+                            "source": source,
+                            "source_type": source_type,
+                            "page": None,
+                            "section": heading,
+                        },
                     }
                 )
             heading = match.group(1).strip()
@@ -44,16 +51,34 @@ def _markdown_sections(text: str, source: str) -> list[dict[str, Any]]:
         sections.append(
             {
                 "text": section_text,
-                "metadata": {"source": source, "page": None, "section": heading},
+                "metadata": {
+                    "source": source,
+                    "source_type": source_type,
+                    "page": None,
+                    "section": heading,
+                },
             }
         )
     return sections
 
 
-def parse_document(path: str | Path, *, source: str | None = None) -> list[dict[str, Any]]:
+def parse_document(
+    path: str | Path,
+    *,
+    source: str | None = None,
+    source_type: str | None = None,
+) -> list[dict[str, Any]]:
     """Parse one supported source file into text units with source/page/section metadata."""
     file_path = Path(path)
     source_name = source or file_path.name
+    if source_type is not None:
+        document_source_type = source_type
+    elif "manual" in file_path.parts:
+        document_source_type = "manual"
+    elif file_path.parent.name.lower() == "raw":
+        document_source_type = "wikipedia"
+    else:
+        document_source_type = "downloaded"
     suffix = file_path.suffix.lower()
 
     if suffix == ".pdf":
@@ -61,7 +86,12 @@ def parse_document(path: str | Path, *, source: str | None = None) -> list[dict[
         return [
             {
                 "text": clean_text(page.extract_text() or ""),
-                "metadata": {"source": source_name, "page": index + 1, "section": None},
+                "metadata": {
+                    "source": source_name,
+                    "source_type": document_source_type,
+                    "page": index + 1,
+                    "section": None,
+                },
             }
             for index, page in enumerate(reader.pages)
             if clean_text(page.extract_text() or "")
@@ -78,17 +108,32 @@ def parse_document(path: str | Path, *, source: str | None = None) -> list[dict[
         return [
             {
                 "text": text,
-                "metadata": {"source": source_name, "page": None, "section": headings or title},
+                "metadata": {
+                    "source": source_name,
+                    "source_type": document_source_type,
+                    "page": None,
+                    "section": headings or title,
+                },
             }
         ]
     if suffix in {".md", ".markdown"}:
         markdown = file_path.read_text(encoding="utf-8", errors="replace")
-        return _markdown_sections(markdown, source_name)
+        return _markdown_sections(markdown, source_name, document_source_type)
     if suffix in {".txt", ".text"}:
         text = clean_text(file_path.read_text(encoding="utf-8", errors="replace"))
         if not text:
             return []
-        return [{"text": text, "metadata": {"source": source_name, "page": None, "section": None}}]
+        return [
+            {
+                "text": text,
+                "metadata": {
+                    "source": source_name,
+                    "source_type": document_source_type,
+                    "page": None,
+                    "section": None,
+                },
+            }
+        ]
     if suffix == ".jsonl":
         records = []
         for line_number, line in enumerate(file_path.read_text(encoding="utf-8").splitlines(), 1):
@@ -102,6 +147,7 @@ def parse_document(path: str | Path, *, source: str | None = None) -> list[dict[
                         "text": text,
                         "metadata": {
                             "source": item.get("source", source_name),
+                            "source_type": item.get("source_type", "wikipedia"),
                             "page": None,
                             "section": item.get("title", f"record {line_number}"),
                             "license_note": item.get("license_note"),

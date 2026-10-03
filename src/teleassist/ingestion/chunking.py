@@ -135,8 +135,9 @@ def build_chunks(
     *,
     chunk_size: int = 512,
     overlap: int = 64,
+    manual_dir: str | Path | None = None,
 ) -> list[dict[str, Any]]:
-    """Parse supported files under a directory and write chunks as JSON Lines."""
+    """Parse the corpus and optional manual files, then write chunks as JSON Lines."""
     source_dir = Path(input_dir)
     documents: list[dict[str, Any]] = []
     paths = [source_dir] if source_dir.is_file() else sorted(source_dir.rglob("*"))
@@ -147,6 +148,22 @@ def build_chunks(
             documents.extend(parse_document(path))
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             LOGGER.warning("Skipping source %s during parsing: %s", path, exc)
+    if manual_dir is not None:
+        manual_root = Path(manual_dir)
+        if manual_root.exists():
+            for path in sorted(manual_root.rglob("*")):
+                if not path.is_file():
+                    continue
+                if path.suffix.lower() not in {".pdf", ".html", ".htm", ".txt"}:
+                    LOGGER.warning("Skipping unsupported manual document %s", path)
+                    continue
+                source = f"manual/{path.relative_to(manual_root).as_posix()}"
+                try:
+                    documents.extend(
+                        parse_document(path, source=source, source_type="manual")
+                    )
+                except (OSError, ValueError, json.JSONDecodeError) as exc:
+                    LOGGER.warning("Skipping manual source %s during parsing: %s", path, exc)
     chunks = chunk_document(documents, chunk_size=chunk_size, overlap=overlap)
     out = Path(output_path)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -164,6 +181,7 @@ def main() -> None:
     parser.add_argument("--input-dir", type=Path, default=Path("data/raw"))
     parser.add_argument("--output", type=Path, default=Path("data/processed/chunks.jsonl"))
     parser.add_argument("--config", type=Path, default=Path("configs/default.yaml"))
+    parser.add_argument("--manual-dir", type=Path, default=Path("data/raw/manual"))
     parser.add_argument("--chunk-size", type=int)
     parser.add_argument("--overlap", type=int)
     args = parser.parse_args()
@@ -174,6 +192,7 @@ def main() -> None:
         args.output,
         chunk_size=args.chunk_size or config.chunking.chunk_size,
         overlap=config.chunking.overlap if args.overlap is None else args.overlap,
+        manual_dir=args.manual_dir,
     )
 
 

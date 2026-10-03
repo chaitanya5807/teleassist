@@ -21,8 +21,20 @@ function Invoke-Task {
         "test" { & $Python -m pytest }
         "lint" { & $Python -m ruff check . }
         "data" {
-            & $Python -m teleassist.ingestion.download --output-dir (Join-Path $PSScriptRoot "data\raw") --bundle-path (Join-Path $PSScriptRoot "data\fallback\wikipedia_telecom.jsonl")
-            & $Python -m teleassist.ingestion.chunking --input-dir (Join-Path $PSScriptRoot "data\fallback\wikipedia_telecom.jsonl") --output (Join-Path $PSScriptRoot "data\processed\chunks.jsonl") --config (Join-Path $PSScriptRoot "configs\default.yaml")
+            $DownloadArgs = @(
+                "-m", "teleassist.ingestion.download",
+                "--output-dir", (Join-Path $PSScriptRoot "data\raw"),
+                "--bundle-path", (Join-Path $PSScriptRoot "data\fallback\wikipedia_telecom.jsonl")
+            )
+            & $Python @DownloadArgs
+            $ChunkArgs = @(
+                "-m", "teleassist.ingestion.chunking",
+                "--input-dir", (Join-Path $PSScriptRoot "data\fallback\wikipedia_telecom.jsonl"),
+                "--manual-dir", (Join-Path $PSScriptRoot "data\raw\manual"),
+                "--output", (Join-Path $PSScriptRoot "data\processed\chunks.jsonl"),
+                "--config", (Join-Path $PSScriptRoot "configs\default.yaml")
+            )
+            & $Python @ChunkArgs
         }
         "index" { Write-Host "not implemented until Phase 3" }
         "sft-data" { Write-Host "not implemented until Phase 5" }
