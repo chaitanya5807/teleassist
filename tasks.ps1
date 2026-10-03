@@ -31,6 +31,7 @@ function Invoke-Task {
                 "-m", "teleassist.ingestion.chunking",
                 "--input-dir", (Join-Path $PSScriptRoot "data\fallback\wikipedia_telecom.jsonl"),
                 "--manual-dir", (Join-Path $PSScriptRoot "data\raw\manual"),
+                "--manifest", (Join-Path $PSScriptRoot "data\raw\MANIFEST.json"),
                 "--output", (Join-Path $PSScriptRoot "data\processed\chunks.jsonl"),
                 "--config", (Join-Path $PSScriptRoot "configs\default.yaml")
             )

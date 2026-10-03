@@ -7,12 +7,14 @@ import hashlib
 import json
 import logging
 import re
+from collections import Counter
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
 import requests
 import tiktoken
+from pypdf.errors import PdfReadError
 
 from teleassist.config import load_config
 from teleassist.ingestion.parse import parse_document
@@ -146,7 +148,7 @@ def build_chunks(
             continue
         try:
             documents.extend(parse_document(path))
-        except (OSError, ValueError, json.JSONDecodeError) as exc:
+        except (OSError, ValueError, json.JSONDecodeError, PdfReadError) as exc:
             LOGGER.warning("Skipping source %s during parsing: %s", path, exc)
     if manual_dir is not None:
         manual_root = Path(manual_dir)
@@ -162,7 +164,7 @@ def build_chunks(
                     documents.extend(
                         parse_document(path, source=source, source_type="manual")
                     )
-                except (OSError, ValueError, json.JSONDecodeError) as exc:
+                except (OSError, ValueError, json.JSONDecodeError, PdfReadError) as exc:
                     LOGGER.warning("Skipping manual source %s during parsing: %s", path, exc)
     chunks = chunk_document(documents, chunk_size=chunk_size, overlap=overlap)
     out = Path(output_path)
@@ -175,6 +177,47 @@ def build_chunks(
     return chunks
 
 
+def format_source_table(
+    manifest_path: str | Path, chunks: list[dict[str, Any]]
+) -> str:
+    """Format per-source status, extracted character count, and chunk count."""
+    manifest_file = Path(manifest_path)
+    if not manifest_file.is_file():
+        return f"Source manifest not found: {manifest_file}"
+    manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+    chunk_counts = Counter(
+        str(chunk.get("metadata", {}).get("source", "")) for chunk in chunks
+    )
+    rows: list[tuple[str, str, int, int]] = []
+    for source in manifest.get("sources", []):
+        source_type = source.get("source_type", "wikipedia")
+        source_key = source.get("source") if source_type == "manual" else source.get("url", "")
+        count = 0 if source.get("status") == "duplicate_redirect" else chunk_counts[str(source_key)]
+        rows.append(
+            (
+                str(source.get("requested_title", source.get("title", ""))),
+                str(source.get("status", "unknown")),
+                int(source.get("char_count", 0)),
+                count,
+            )
+        )
+
+    title_width = max(5, min(56, max((len(row[0]) for row in rows), default=5)))
+    status_width = max(6, min(20, max((len(row[1]) for row in rows), default=6)))
+    lines = [
+        (
+            f"| {'Title':<{title_width}} | {'Status':<{status_width}} | "
+            f"{'Characters':>10} | {'Chunks':>6} |"
+        ),
+        f"|{'-' * (title_width + 2)}|{'-' * (status_width + 2)}|------------:|-------:|",
+    ]
+    lines.extend(
+        f"| {title:<{title_width}} | {status:<{status_width}} | {characters:>10,} | {count:>6,} |"
+        for title, status, characters, count in rows
+    )
+    return "\n".join(lines)
+
+
 def main() -> None:
     """Build processed chunks from the configured raw corpus."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -182,18 +225,20 @@ def main() -> None:
     parser.add_argument("--output", type=Path, default=Path("data/processed/chunks.jsonl"))
     parser.add_argument("--config", type=Path, default=Path("configs/default.yaml"))
     parser.add_argument("--manual-dir", type=Path, default=Path("data/raw/manual"))
+    parser.add_argument("--manifest", type=Path, default=Path("data/raw/MANIFEST.json"))
     parser.add_argument("--chunk-size", type=int)
     parser.add_argument("--overlap", type=int)
     args = parser.parse_args()
     config = load_config(args.config)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    build_chunks(
+    chunks = build_chunks(
         args.input_dir,
         args.output,
         chunk_size=args.chunk_size or config.chunking.chunk_size,
         overlap=config.chunking.overlap if args.overlap is None else args.overlap,
         manual_dir=args.manual_dir,
     )
+    print(format_source_table(args.manifest, chunks))
 
 
 if __name__ == "__main__":

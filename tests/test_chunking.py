@@ -1,6 +1,7 @@
 """Behavior checks for token-aware chunks and stable metadata."""
 
 import json
+from unittest.mock import Mock
 
 from pypdf import PdfWriter
 from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
@@ -95,3 +96,68 @@ def test_manual_text_file_is_chunked_and_manifested(tmp_path) -> None:
     }
     assert all(source["source_type"] == "manual" for source in manifest["sources"])
     assert all(source["status"] == "available" for source in manifest["sources"])
+
+
+def test_wikipedia_downloader_retries_with_retry_after_and_backoff(tmp_path) -> None:
+    responses = [
+        Mock(status_code=429, headers={"Retry-After": "3"}),
+        Mock(status_code=503, headers={}),
+        Mock(status_code=200, headers={}),
+        Mock(status_code=200, headers={}),
+    ]
+    responses[2].json.return_value = {
+        "query": {"pages": {"1": {"title": "5G", "extract": "Fifth generation mobile networks."}}}
+    }
+    responses[3].json.return_value = {
+        "query": {"pages": {"2": {"title": "4G", "extract": "Fourth generation mobile networks."}}}
+    }
+    session = Mock()
+    session.headers = {}
+    session.get.side_effect = responses
+    delays: list[float] = []
+
+    records = download_sources(
+        tmp_path,
+        titles=("5G", "4G"),
+        session=session,
+        bundle_path=None,
+        sleep=delays.append,
+        monotonic=lambda: 0.0,
+    )
+
+    assert [source["status"] for source in records] == ["downloaded", "downloaded"]
+    assert delays == [3.0, 2.0, 1.0]
+    assert session.headers["User-Agent"].startswith("TeleAssist/0.1 (student project;")
+    assert session.get.call_count == 4
+
+
+def test_wikipedia_downloader_uses_cached_successful_pages(tmp_path) -> None:
+    response = Mock(status_code=200, headers={})
+    response.json.return_value = {
+        "query": {"pages": {"1": {"title": "5G", "extract": "Cached mobile network article."}}}
+    }
+    first_session = Mock()
+    first_session.headers = {}
+    first_session.get.return_value = response
+    download_sources(
+        tmp_path,
+        titles=("5G",),
+        session=first_session,
+        bundle_path=None,
+        sleep=lambda _: None,
+        monotonic=lambda: 0.0,
+    )
+
+    second_session = Mock()
+    second_session.headers = {}
+    records = download_sources(
+        tmp_path,
+        titles=("5G",),
+        session=second_session,
+        bundle_path=None,
+        sleep=lambda _: None,
+        monotonic=lambda: 0.0,
+    )
+
+    assert records[0]["status"] == "cached"
+    second_session.get.assert_not_called()
