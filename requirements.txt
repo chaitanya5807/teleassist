@@ -7,6 +7,10 @@ peft==0.14.0
 pydantic==2.10.4
 pydantic-settings==2.7.0
 PyYAML==6.0.2
+requests==2.32.3
+pypdf==5.1.0
+beautifulsoup4==4.12.3
+tiktoken==0.8.0
 pytest==8.3.4
 ruff==0.8.6
 sentence-transformers==3.3.1
@@ -15,4 +19,3 @@ torch==2.5.1
 transformers==4.47.1
 trl==0.13.0
 uvicorn[standard]==0.34.0
-
