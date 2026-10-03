@@ -1,0 +1,7 @@
+Metadata-Version: 2.4
+Name: teleassist
+Version: 0.1.0
+Summary: A grounded telecom customer support RAG assistant for India.
+Requires-Python: >=3.11
+Requires-Dist: pydantic==2.10.4
+Requires-Dist: PyYAML==6.0.2
