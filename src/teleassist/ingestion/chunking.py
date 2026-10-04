@@ -18,7 +18,7 @@ from pypdf.errors import PdfReadError
 
 from teleassist.config import load_config
 from teleassist.ingestion.parse import filter_english_units, parse_document
-from teleassist.ingestion.splitting import split_corpus_documents, write_document_split
+from teleassist.ingestion.splitting import split_corpus_families, write_document_split
 
 LOGGER = logging.getLogger(__name__)
 try:
@@ -140,6 +140,7 @@ def build_chunks(
     overlap: int = 64,
     manual_dir: str | Path | None = None,
     include_drafts: bool = False,
+    family_mapping: dict[str, list[str]] | None = None,
 ) -> list[dict[str, Any]]:
     """Parse the corpus and optional manual files, then write chunks as JSON Lines."""
     source_dir = Path(input_dir)
@@ -153,7 +154,9 @@ def build_chunks(
         ):
             continue
         try:
-            parsed = filter_english_units(parse_document(path), document_name=str(path))
+            parsed = filter_english_units(
+                parse_document(path, family_mapping=family_mapping), document_name=str(path)
+            )
             documents.extend(
                 unit
                 for unit in parsed
@@ -174,7 +177,12 @@ def build_chunks(
                 source = f"manual/{path.relative_to(manual_root).as_posix()}"
                 try:
                     parsed = filter_english_units(
-                        parse_document(path, source=source, source_type="manual"),
+                        parse_document(
+                            path,
+                            source=source,
+                            source_type="manual",
+                            family_mapping=family_mapping,
+                        ),
                         document_name=source,
                     )
                     documents.extend(
@@ -254,11 +262,12 @@ def main() -> None:
         overlap=config.chunking.overlap if args.overlap is None else args.overlap,
         manual_dir=args.manual_dir,
         include_drafts=config.include_drafts,
+        family_mapping=config.document_families,
     )
-    document_split = split_corpus_documents(chunks, seed=config.seed)
+    document_split = split_corpus_families(chunks, seed=config.seed)
     write_document_split(args.split_output, document_split)
     LOGGER.info(
-        "Wrote stratified document split: %d train, %d eval to %s",
+        "Wrote family split: %d train, %d eval to %s",
         len(document_split["train_documents"]),
         len(document_split["eval_documents"]),
         args.split_output,

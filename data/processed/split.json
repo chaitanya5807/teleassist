@@ -1,13 +1,126 @@
 {
   "seed": 42,
-  "eval_fraction": 0.2,
+  "target_eval_fraction": 0.2,
+  "total_chunks": 1165,
+  "eval_chunks": 233,
+  "eval_share": 0.2,
+  "train_chunks": 932,
+  "train_share": 0.8,
+  "eval_families": [
+    {
+      "family": "AIRTEL",
+      "chunks": 62,
+      "share": 0.26609442060085836,
+      "wikipedia_pages": 0,
+      "wikipedia_chunks": 0,
+      "documents": [
+        "manual/airtel_telecom_consumers_charter.pdf"
+      ]
+    },
+    {
+      "family": "COMPLAINT",
+      "chunks": 23,
+      "share": 0.09871244635193133,
+      "wikipedia_pages": 0,
+      "wikipedia_chunks": 0,
+      "documents": [
+        "manual/trai_complaint_redressal_2012.pdf"
+      ]
+    },
+    {
+      "family": "KYC",
+      "chunks": 25,
+      "share": 0.1072961373390558,
+      "wikipedia_pages": 1,
+      "wikipedia_chunks": 15,
+      "documents": [
+        "https://en.wikipedia.org/wiki/Know_your_customer",
+        "manual/dot_alternate_digital_kyc_2026.pdf",
+        "manual/dot_kyc_paper_based_2025.pdf",
+        "manual/trai_ekyc_recommendations_2017.pdf"
+      ]
+    },
+    {
+      "family": "MNP",
+      "chunks": 59,
+      "share": 0.2532188841201717,
+      "wikipedia_pages": 0,
+      "wikipedia_chunks": 0,
+      "documents": [
+        "manual/trai_mnp_2009_consolidated_2024.pdf",
+        "manual/trai_mnp_9th_amendment_2024.pdf"
+      ]
+    },
+    {
+      "family": "TCPR",
+      "chunks": 48,
+      "share": 0.20600858369098712,
+      "wikipedia_pages": 0,
+      "wikipedia_chunks": 0,
+      "documents": [
+        "manual/trai_tcpr_12th_amendment_2024.pdf",
+        "manual/trai_tcpr_2012_consolidated_2025.pdf"
+      ]
+    },
+    {
+      "family": "WIKIPEDIA_SMS",
+      "chunks": 16,
+      "share": 0.06866952789699571,
+      "wikipedia_pages": 1,
+      "wikipedia_chunks": 16,
+      "documents": [
+        "https://en.wikipedia.org/wiki/SMS"
+      ]
+    }
+  ],
+  "train_families": [
+    "ACT",
+    "HANDBOOK",
+    "JIO",
+    "QOS",
+    "TCCCPR",
+    "WIKIPEDIA_3G",
+    "WIKIPEDIA_4G",
+    "WIKIPEDIA_5G",
+    "WIKIPEDIA_BROADBAND",
+    "WIKIPEDIA_CALL_DETAIL_RECORD",
+    "WIKIPEDIA_CELLULAR_NETWORK",
+    "WIKIPEDIA_CONSUMER_PROTECTION",
+    "WIKIPEDIA_DEPARTMENT_OF_TELECOMMUNICATIONS",
+    "WIKIPEDIA_DO_NOT_DISTURB_TELECOMMUNICATIONS",
+    "WIKIPEDIA_ESIM",
+    "WIKIPEDIA_INTERNATIONAL_MOBILE_EQUIPMENT_IDENTITY",
+    "WIKIPEDIA_INTERNATIONAL_MOBILE_SUBSCRIBER_IDENTITY",
+    "WIKIPEDIA_INTERNET_IN_INDIA",
+    "WIKIPEDIA_INTERNET_SERVICE_PROVIDER",
+    "WIKIPEDIA_LIST_OF_MARKETING_OPT_OUT_REGISTRIES",
+    "WIKIPEDIA_LTE_TELECOMMUNICATION",
+    "WIKIPEDIA_MOBILE_BROADBAND",
+    "WIKIPEDIA_MOBILE_NETWORK_OPERATOR",
+    "WIKIPEDIA_MOBILE_NUMBER_PORTABILITY",
+    "WIKIPEDIA_MOBILE_PHONE",
+    "WIKIPEDIA_MOBILE_VIRTUAL_NETWORK_OPERATOR",
+    "WIKIPEDIA_POSTPAID_MOBILE_PHONE",
+    "WIKIPEDIA_PREPAID_MOBILE_PHONE",
+    "WIKIPEDIA_RADIO_SPECTRUM",
+    "WIKIPEDIA_ROAMING",
+    "WIKIPEDIA_SIM_CARD",
+    "WIKIPEDIA_SPECTRUM_AUCTION",
+    "WIKIPEDIA_TELECOMMUNICATIONS",
+    "WIKIPEDIA_TELECOMMUNICATIONS_IN_INDIA",
+    "WIKIPEDIA_TELECOM_REGULATORY_AUTHORITY_OF_INDIA",
+    "WIKIPEDIA_TELEMARKETING",
+    "WIKIPEDIA_TELEPHONE_NUMBERING_PLAN",
+    "WIKIPEDIA_WIRELESS_INTERNET_SERVICE_PROVIDER"
+  ],
   "train_documents": [
     {
       "source": "https://en.wikipedia.org/wiki/3G",
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "3G",
-      "year": 2009,
+      "year": null,
+      "family": "WIKIPEDIA_3G",
       "chunk_count": 14
     },
     {
@@ -15,7 +128,8 @@
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "4G",
-      "year": 2006,
+      "year": null,
+      "family": "WIKIPEDIA_4G",
       "chunk_count": 18
     },
     {
@@ -23,7 +137,8 @@
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "5G",
-      "year": 2023,
+      "year": null,
+      "family": "WIKIPEDIA_5G",
       "chunk_count": 20
     },
     {
@@ -31,7 +146,8 @@
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "Broadband",
-      "year": 2014,
+      "year": null,
+      "family": "WIKIPEDIA_BROADBAND",
       "chunk_count": 10
     },
     {
@@ -39,15 +155,26 @@
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "Call detail record",
-      "year": 2013,
+      "year": null,
+      "family": "WIKIPEDIA_CALL_DETAIL_RECORD",
       "chunk_count": 3
+    },
+    {
+      "source": "https://en.wikipedia.org/wiki/Cellular_network",
+      "source_type": "wikipedia",
+      "doc_type": "encyclopedia",
+      "doc_title": "Cellular network",
+      "year": null,
+      "family": "WIKIPEDIA_CELLULAR_NETWORK",
+      "chunk_count": 17
     },
     {
       "source": "https://en.wikipedia.org/wiki/Consumer_protection",
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "Consumer protection",
-      "year": 2013,
+      "year": null,
+      "family": "WIKIPEDIA_CONSUMER_PROTECTION",
       "chunk_count": 10
     },
     {
@@ -55,7 +182,8 @@
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "Department of Telecommunications",
-      "year": 2020,
+      "year": null,
+      "family": "WIKIPEDIA_DEPARTMENT_OF_TELECOMMUNICATIONS",
       "chunk_count": 2
     },
     {
@@ -63,15 +191,26 @@
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "Do Not Disturb (telecommunications)",
-      "year": 2007,
+      "year": null,
+      "family": "WIKIPEDIA_DO_NOT_DISTURB_TELECOMMUNICATIONS",
       "chunk_count": 1
+    },
+    {
+      "source": "https://en.wikipedia.org/wiki/ESIM",
+      "source_type": "wikipedia",
+      "doc_type": "encyclopedia",
+      "doc_title": "ESIM",
+      "year": null,
+      "family": "WIKIPEDIA_ESIM",
+      "chunk_count": 3
     },
     {
       "source": "https://en.wikipedia.org/wiki/International_Mobile_Equipment_Identity",
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "International Mobile Equipment Identity",
-      "year": 2099,
+      "year": null,
+      "family": "WIKIPEDIA_INTERNATIONAL_MOBILE_EQUIPMENT_IDENTITY",
       "chunk_count": 9
     },
     {
@@ -79,31 +218,35 @@
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "International mobile subscriber identity",
-      "year": 2004,
+      "year": null,
+      "family": "WIKIPEDIA_INTERNATIONAL_MOBILE_SUBSCRIBER_IDENTITY",
       "chunk_count": 3
+    },
+    {
+      "source": "https://en.wikipedia.org/wiki/Internet_in_India",
+      "source_type": "wikipedia",
+      "doc_type": "encyclopedia",
+      "doc_title": "Internet in India",
+      "year": null,
+      "family": "WIKIPEDIA_INTERNET_IN_INDIA",
+      "chunk_count": 13
     },
     {
       "source": "https://en.wikipedia.org/wiki/Internet_service_provider",
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "Internet service provider",
-      "year": 2023,
+      "year": null,
+      "family": "WIKIPEDIA_INTERNET_SERVICE_PROVIDER",
       "chunk_count": 11
-    },
-    {
-      "source": "https://en.wikipedia.org/wiki/Know_your_customer",
-      "source_type": "wikipedia",
-      "doc_type": "encyclopedia",
-      "doc_title": "Know your customer",
-      "year": 2017,
-      "chunk_count": 15
     },
     {
       "source": "https://en.wikipedia.org/wiki/LTE_%28telecommunication%29",
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "LTE (telecommunication)",
-      "year": 2014,
+      "year": null,
+      "family": "WIKIPEDIA_LTE_TELECOMMUNICATION",
       "chunk_count": 22
     },
     {
@@ -112,6 +255,7 @@
       "doc_type": "encyclopedia",
       "doc_title": "List of marketing opt-out registries",
       "year": null,
+      "family": "WIKIPEDIA_LIST_OF_MARKETING_OPT_OUT_REGISTRIES",
       "chunk_count": 1
     },
     {
@@ -119,7 +263,8 @@
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "Mobile broadband",
-      "year": 2004,
+      "year": null,
+      "family": "WIKIPEDIA_MOBILE_BROADBAND",
       "chunk_count": 5
     },
     {
@@ -128,6 +273,7 @@
       "doc_type": "encyclopedia",
       "doc_title": "Mobile network operator",
       "year": null,
+      "family": "WIKIPEDIA_MOBILE_NETWORK_OPERATOR",
       "chunk_count": 1
     },
     {
@@ -135,23 +281,44 @@
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "Mobile number portability",
-      "year": 2013,
+      "year": null,
+      "family": "WIKIPEDIA_MOBILE_NUMBER_PORTABILITY",
       "chunk_count": 3
+    },
+    {
+      "source": "https://en.wikipedia.org/wiki/Mobile_phone",
+      "source_type": "wikipedia",
+      "doc_type": "encyclopedia",
+      "doc_title": "Mobile phone",
+      "year": null,
+      "family": "WIKIPEDIA_MOBILE_PHONE",
+      "chunk_count": 22
     },
     {
       "source": "https://en.wikipedia.org/wiki/Mobile_virtual_network_operator",
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "Mobile virtual network operator",
-      "year": 2003,
+      "year": null,
+      "family": "WIKIPEDIA_MOBILE_VIRTUAL_NETWORK_OPERATOR",
       "chunk_count": 9
+    },
+    {
+      "source": "https://en.wikipedia.org/wiki/Postpaid_mobile_phone",
+      "source_type": "wikipedia",
+      "doc_type": "encyclopedia",
+      "doc_title": "Postpaid mobile phone",
+      "year": null,
+      "family": "WIKIPEDIA_POSTPAID_MOBILE_PHONE",
+      "chunk_count": 1
     },
     {
       "source": "https://en.wikipedia.org/wiki/Prepaid_mobile_phone",
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "Prepaid mobile phone",
-      "year": 2021,
+      "year": null,
+      "family": "WIKIPEDIA_PREPAID_MOBILE_PHONE",
       "chunk_count": 10
     },
     {
@@ -159,7 +326,8 @@
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "Radio spectrum",
-      "year": 1978,
+      "year": null,
+      "family": "WIKIPEDIA_RADIO_SPECTRUM",
       "chunk_count": 5
     },
     {
@@ -167,23 +335,17 @@
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "Roaming",
-      "year": 2010,
+      "year": null,
+      "family": "WIKIPEDIA_ROAMING",
       "chunk_count": 13
-    },
-    {
-      "source": "https://en.wikipedia.org/wiki/SMS",
-      "source_type": "wikipedia",
-      "doc_type": "encyclopedia",
-      "doc_title": "SMS",
-      "year": 2011,
-      "chunk_count": 16
     },
     {
       "source": "https://en.wikipedia.org/wiki/Spectrum_auction",
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "Spectrum auction",
-      "year": 1989,
+      "year": null,
+      "family": "WIKIPEDIA_SPECTRUM_AUCTION",
       "chunk_count": 15
     },
     {
@@ -191,23 +353,44 @@
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "SIM card",
-      "year": 2006,
+      "year": null,
+      "family": "WIKIPEDIA_SIM_CARD",
       "chunk_count": 19
+    },
+    {
+      "source": "https://en.wikipedia.org/wiki/Telecom_Regulatory_Authority_of_India",
+      "source_type": "wikipedia",
+      "doc_type": "encyclopedia",
+      "doc_title": "Telecom Regulatory Authority of India",
+      "year": null,
+      "family": "WIKIPEDIA_TELECOM_REGULATORY_AUTHORITY_OF_INDIA",
+      "chunk_count": 3
     },
     {
       "source": "https://en.wikipedia.org/wiki/Telecommunications",
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "Telecommunications",
-      "year": 2005,
+      "year": null,
+      "family": "WIKIPEDIA_TELECOMMUNICATIONS",
       "chunk_count": 23
+    },
+    {
+      "source": "https://en.wikipedia.org/wiki/Telecommunications_in_India",
+      "source_type": "wikipedia",
+      "doc_type": "encyclopedia",
+      "doc_title": "Telecommunications in India",
+      "year": null,
+      "family": "WIKIPEDIA_TELECOMMUNICATIONS_IN_INDIA",
+      "chunk_count": 19
     },
     {
       "source": "https://en.wikipedia.org/wiki/Telemarketing",
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "Telemarketing",
-      "year": 2007,
+      "year": null,
+      "family": "WIKIPEDIA_TELEMARKETING",
       "chunk_count": 12
     },
     {
@@ -215,7 +398,8 @@
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "Telephone numbering plan",
-      "year": 2011,
+      "year": null,
+      "family": "WIKIPEDIA_TELEPHONE_NUMBERING_PLAN",
       "chunk_count": 12
     },
     {
@@ -223,32 +407,9 @@
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
       "doc_title": "Wireless Internet service provider",
-      "year": 2008,
-      "chunk_count": 4
-    },
-    {
-      "source": "manual/airtel_telecom_consumers_charter.pdf",
-      "source_type": "manual",
-      "doc_type": "faq_or_guide",
-      "doc_title": "Airtel Telecom Consumers Charter",
       "year": null,
-      "chunk_count": 62
-    },
-    {
-      "source": "manual/dot_alternate_digital_kyc_2026.pdf",
-      "source_type": "manual",
-      "doc_type": "final_regulation",
-      "doc_title": "Dot Alternate Digital Kyc 2026",
-      "year": 2026,
-      "chunk_count": 5
-    },
-    {
-      "source": "manual/dot_kyc_paper_based_2025.pdf",
-      "source_type": "manual",
-      "doc_type": "final_regulation",
-      "doc_title": "Dot Kyc Paper Based 2025",
-      "year": 2025,
-      "chunk_count": 1
+      "family": "WIKIPEDIA_WIRELESS_INTERNET_SERVICE_PROVIDER",
+      "chunk_count": 4
     },
     {
       "source": "manual/jio_telecom_consumer_chart.pdf",
@@ -256,6 +417,7 @@
       "doc_type": "faq_or_guide",
       "doc_title": "Jio Telecom Consumer Chart",
       "year": null,
+      "family": "JIO",
       "chunk_count": 70
     },
     {
@@ -264,6 +426,7 @@
       "doc_type": "faq_or_guide",
       "doc_title": "Press Release: Press Information Bureau",
       "year": 2024,
+      "family": "QOS",
       "chunk_count": 6
     },
     {
@@ -272,7 +435,17 @@
       "doc_type": "faq_or_guide",
       "doc_title": "Press Release: Press Information Bureau",
       "year": 2025,
+      "family": "TCCCPR",
       "chunk_count": 10
+    },
+    {
+      "source": "manual/pib_tcccpr_spam_2025.html",
+      "source_type": "manual",
+      "doc_type": "faq_or_guide",
+      "doc_title": "Press Release Page | Press Information Bureau",
+      "year": 2025,
+      "family": "TCCCPR",
+      "chunk_count": 3
     },
     {
       "source": "manual/telecommunications_act_2023.pdf",
@@ -280,6 +453,7 @@
       "doc_type": "final_regulation",
       "doc_title": "Telecommunications Act 2023",
       "year": 2023,
+      "family": "ACT",
       "chunk_count": 53
     },
     {
@@ -288,23 +462,8 @@
       "doc_type": "faq_or_guide",
       "doc_title": "Trai Consumer Handbook 2018 English",
       "year": 2018,
+      "family": "HANDBOOK",
       "chunk_count": 69
-    },
-    {
-      "source": "manual/trai_mnp_2009_consolidated_2024.pdf",
-      "source_type": "manual",
-      "doc_type": "final_regulation",
-      "doc_title": "Trai Mnp 2009 Consolidated 2024",
-      "year": 2024,
-      "chunk_count": 48
-    },
-    {
-      "source": "manual/trai_mnp_9th_amendment_2024.pdf",
-      "source_type": "manual",
-      "doc_type": "final_regulation",
-      "doc_title": "Trai Mnp 9Th Amendment 2024",
-      "year": 2024,
-      "chunk_count": 11
     },
     {
       "source": "manual/trai_qos_2024.pdf",
@@ -312,7 +471,17 @@
       "doc_type": "final_regulation",
       "doc_title": "Trai Qos 2024",
       "year": 2024,
+      "family": "QOS",
       "chunk_count": 194
+    },
+    {
+      "source": "manual/trai_tcccpr_2018_consolidated_2026.pdf",
+      "source_type": "manual",
+      "doc_type": "final_regulation",
+      "doc_title": "Trai Tcccpr 2018 Consolidated 2026",
+      "year": 2026,
+      "family": "TCCCPR",
+      "chunk_count": 93
     },
     {
       "source": "manual/trai_tcccpr_2nd_amendment_2025.pdf",
@@ -320,89 +489,55 @@
       "doc_type": "final_regulation",
       "doc_title": "Trai Tcccpr 2Nd Amendment 2025",
       "year": 2025,
+      "family": "TCCCPR",
       "chunk_count": 101
-    },
-    {
-      "source": "manual/trai_tcpr_12th_amendment_2024.pdf",
-      "source_type": "manual",
-      "doc_type": "final_regulation",
-      "doc_title": "Trai Tcpr 12Th Amendment 2024",
-      "year": 2024,
-      "chunk_count": 12
-    },
-    {
-      "source": "manual/trai_tcpr_2012_consolidated_2025.pdf",
-      "source_type": "manual",
-      "doc_type": "final_regulation",
-      "doc_title": "Trai Tcpr 2012 Consolidated 2025",
-      "year": 2025,
-      "chunk_count": 36
     }
   ],
   "eval_documents": [
     {
-      "source": "https://en.wikipedia.org/wiki/Cellular_network",
+      "source": "https://en.wikipedia.org/wiki/Know_your_customer",
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
-      "doc_title": "Cellular network",
-      "year": 2021,
-      "chunk_count": 17
+      "doc_title": "Know your customer",
+      "year": null,
+      "family": "KYC",
+      "chunk_count": 15
     },
     {
-      "source": "https://en.wikipedia.org/wiki/ESIM",
+      "source": "https://en.wikipedia.org/wiki/SMS",
       "source_type": "wikipedia",
       "doc_type": "encyclopedia",
-      "doc_title": "ESIM",
-      "year": 2021,
-      "chunk_count": 3
+      "doc_title": "SMS",
+      "year": null,
+      "family": "WIKIPEDIA_SMS",
+      "chunk_count": 16
     },
     {
-      "source": "https://en.wikipedia.org/wiki/Internet_in_India",
-      "source_type": "wikipedia",
-      "doc_type": "encyclopedia",
-      "doc_title": "Internet in India",
-      "year": 2030,
-      "chunk_count": 13
-    },
-    {
-      "source": "https://en.wikipedia.org/wiki/Mobile_phone",
-      "source_type": "wikipedia",
-      "doc_type": "encyclopedia",
-      "doc_title": "Mobile phone",
-      "year": 2007,
-      "chunk_count": 22
-    },
-    {
-      "source": "https://en.wikipedia.org/wiki/Postpaid_mobile_phone",
-      "source_type": "wikipedia",
-      "doc_type": "encyclopedia",
-      "doc_title": "Postpaid mobile phone",
-      "year": 2010,
-      "chunk_count": 1
-    },
-    {
-      "source": "https://en.wikipedia.org/wiki/Telecom_Regulatory_Authority_of_India",
-      "source_type": "wikipedia",
-      "doc_type": "encyclopedia",
-      "doc_title": "Telecom Regulatory Authority of India",
-      "year": 2010,
-      "chunk_count": 3
-    },
-    {
-      "source": "https://en.wikipedia.org/wiki/Telecommunications_in_India",
-      "source_type": "wikipedia",
-      "doc_type": "encyclopedia",
-      "doc_title": "Telecommunications in India",
-      "year": 2012,
-      "chunk_count": 19
-    },
-    {
-      "source": "manual/pib_tcccpr_spam_2025.html",
+      "source": "manual/airtel_telecom_consumers_charter.pdf",
       "source_type": "manual",
       "doc_type": "faq_or_guide",
-      "doc_title": "Press Release Page | Press Information Bureau",
+      "doc_title": "Airtel Telecom Consumers Charter",
+      "year": null,
+      "family": "AIRTEL",
+      "chunk_count": 62
+    },
+    {
+      "source": "manual/dot_alternate_digital_kyc_2026.pdf",
+      "source_type": "manual",
+      "doc_type": "final_regulation",
+      "doc_title": "Dot Alternate Digital Kyc 2026",
+      "year": 2026,
+      "family": "KYC",
+      "chunk_count": 5
+    },
+    {
+      "source": "manual/dot_kyc_paper_based_2025.pdf",
+      "source_type": "manual",
+      "doc_type": "final_regulation",
+      "doc_title": "Dot Kyc Paper Based 2025",
       "year": 2025,
-      "chunk_count": 3
+      "family": "KYC",
+      "chunk_count": 1
     },
     {
       "source": "manual/trai_complaint_redressal_2012.pdf",
@@ -410,6 +545,7 @@
       "doc_type": "final_regulation",
       "doc_title": "Trai Complaint Redressal 2012",
       "year": 2012,
+      "family": "COMPLAINT",
       "chunk_count": 23
     },
     {
@@ -418,15 +554,44 @@
       "doc_type": "recommendation",
       "doc_title": "Trai Ekyc Recommendations 2017",
       "year": 2017,
+      "family": "KYC",
       "chunk_count": 4
     },
     {
-      "source": "manual/trai_tcccpr_2018_consolidated_2026.pdf",
+      "source": "manual/trai_mnp_2009_consolidated_2024.pdf",
       "source_type": "manual",
       "doc_type": "final_regulation",
-      "doc_title": "Trai Tcccpr 2018 Consolidated 2026",
-      "year": 2026,
-      "chunk_count": 93
+      "doc_title": "Trai Mnp 2009 Consolidated 2024",
+      "year": 2024,
+      "family": "MNP",
+      "chunk_count": 48
+    },
+    {
+      "source": "manual/trai_mnp_9th_amendment_2024.pdf",
+      "source_type": "manual",
+      "doc_type": "final_regulation",
+      "doc_title": "Trai Mnp 9Th Amendment 2024",
+      "year": 2024,
+      "family": "MNP",
+      "chunk_count": 11
+    },
+    {
+      "source": "manual/trai_tcpr_12th_amendment_2024.pdf",
+      "source_type": "manual",
+      "doc_type": "final_regulation",
+      "doc_title": "Trai Tcpr 12Th Amendment 2024",
+      "year": 2024,
+      "family": "TCPR",
+      "chunk_count": 12
+    },
+    {
+      "source": "manual/trai_tcpr_2012_consolidated_2025.pdf",
+      "source_type": "manual",
+      "doc_type": "final_regulation",
+      "doc_title": "Trai Tcpr 2012 Consolidated 2025",
+      "year": 2025,
+      "family": "TCPR",
+      "chunk_count": 36
     }
   ]
 }

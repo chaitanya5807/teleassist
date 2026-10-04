@@ -14,6 +14,7 @@ def test_load_default_config() -> None:
 
     assert config.seed == 42
     assert config.max_doc_share_for_sampling == 0.15
+    assert config.document_families["MNP"] == ["mnp"]
     assert config.chunking.chunk_size == 512
     assert config.models.generator == "Qwen/Qwen2.5-1.5B-Instruct"
 

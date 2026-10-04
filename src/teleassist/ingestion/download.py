@@ -207,6 +207,7 @@ def download_sources(
     max_retries: int = 5,
     min_request_interval: float = 1.0,
     include_drafts: bool = False,
+    family_mapping: dict[str, list[str]] | None = None,
     sleep: Callable[[float], None] = time.sleep,
     monotonic: Callable[[], float] = time.monotonic,
 ) -> list[dict[str, Any]]:
@@ -238,7 +239,12 @@ def download_sources(
             "source_type": "wikipedia",
             "status": "failed",
             "char_count": 0,
-            **infer_document_metadata(title, source_type="wikipedia", title=title),
+            **infer_document_metadata(
+                title,
+                source_type="wikipedia",
+                title=title,
+                family_mapping=family_mapping,
+            ),
         }
         try:
             cached = cache.get(title)
@@ -256,7 +262,11 @@ def download_sources(
                         "status": "duplicate_redirect" if is_duplicate else "cached",
                         "char_count": len(text),
                         **infer_document_metadata(
-                            actual_title, text, source_type="wikipedia", title=actual_title
+                            actual_title,
+                            text,
+                            source_type="wikipedia",
+                            title=actual_title,
+                            family_mapping=family_mapping,
                         ),
                     }
                 )
@@ -270,7 +280,11 @@ def download_sources(
                             "source_type": "wikipedia",
                             "text": text,
                             **infer_document_metadata(
-                                actual_title, text, source_type="wikipedia", title=actual_title
+                                actual_title,
+                                text,
+                                source_type="wikipedia",
+                                title=actual_title,
+                                family_mapping=family_mapping,
                             ),
                         }
                     )
@@ -308,7 +322,11 @@ def download_sources(
                         "status": "duplicate_redirect",
                         "char_count": len(text),
                         **infer_document_metadata(
-                            actual_title, text, source_type="wikipedia", title=actual_title
+                            actual_title,
+                            text,
+                            source_type="wikipedia",
+                            title=actual_title,
+                            family_mapping=family_mapping,
                         ),
                     }
                 )
@@ -324,7 +342,11 @@ def download_sources(
                     "file": file_name,
                     "char_count": len(text),
                     **infer_document_metadata(
-                        actual_title, text, source_type="wikipedia", title=actual_title
+                        actual_title,
+                        text,
+                        source_type="wikipedia",
+                        title=actual_title,
+                        family_mapping=family_mapping,
                     ),
                 }
             )
@@ -337,7 +359,11 @@ def download_sources(
                     "source_type": "wikipedia",
                     "text": text,
                     **infer_document_metadata(
-                        actual_title, text, source_type="wikipedia", title=actual_title
+                        actual_title,
+                        text,
+                        source_type="wikipedia",
+                        title=actual_title,
+                        family_mapping=family_mapping,
                     ),
                 }
             )
@@ -359,14 +385,19 @@ def download_sources(
         manual_status = "available"
         char_count = 0
         pages = 1
-        doc_tags: dict[str, Any] = infer_document_metadata(path)
+        doc_tags: dict[str, Any] = infer_document_metadata(path, family_mapping=family_mapping)
         try:
             if path.suffix.lower() == ".pdf":
                 stats = pdf_text_stats(path)
                 pages = int(stats["pages"])
                 char_count = int(stats["characters"])
                 first_text_units = (
-                    parse_document(path, source=relative_path, source_type="manual")
+                    parse_document(
+                        path,
+                        source=relative_path,
+                        source_type="manual",
+                        family_mapping=family_mapping,
+                    )
                     if float(stats["average_chars_per_page"]) >= 200
                     else []
                 )
@@ -380,12 +411,21 @@ def download_sources(
                     first_page = ""
                 else:
                     first_page = first_text_units[0]["text"] if first_text_units else ""
-                doc_tags = infer_document_metadata(path, first_page, source_type="manual")
+                doc_tags = infer_document_metadata(
+                    path, first_page, source_type="manual", family_mapping=family_mapping
+                )
             else:
-                parsed = parse_document(path, source=relative_path, source_type="manual")
+                parsed = parse_document(
+                    path,
+                    source=relative_path,
+                    source_type="manual",
+                    family_mapping=family_mapping,
+                )
                 char_count = sum(len(unit["text"]) for unit in parsed)
                 first_page = parsed[0]["text"] if parsed else ""
-                doc_tags = infer_document_metadata(path, first_page, source_type="manual")
+                doc_tags = infer_document_metadata(
+                    path, first_page, source_type="manual", family_mapping=family_mapping
+                )
             if doc_tags["doc_type"] == "draft_or_consultation" and not include_drafts:
                 manual_status = "excluded_draft"
         except (OSError, ValueError, PdfReadError) as exc:
@@ -420,7 +460,11 @@ def download_sources(
         for doc in current_docs.values():
             doc.update(
                 infer_document_metadata(
-                    doc["title"], doc.get("text", ""), source_type="wikipedia", title=doc["title"]
+                    doc["title"],
+                    doc.get("text", ""),
+                    source_type="wikipedia",
+                    title=doc["title"],
+                    family_mapping=family_mapping,
                 )
             )
         bundle.write_text(
@@ -451,6 +495,7 @@ def main() -> None:
         timeout=args.timeout,
         bundle_path=args.bundle_path,
         include_drafts=config.include_drafts,
+        family_mapping=config.document_families,
     )
 
 

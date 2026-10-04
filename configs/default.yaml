@@ -1,6 +1,17 @@
 seed: 42
 include_drafts: false
 max_doc_share_for_sampling: 0.15
+document_families:
+  TCCCPR: [tcccpr]
+  MNP: [mnp]
+  TCPR: [tcpr]
+  QOS: [qos]
+  KYC: [kyc, ekyc, "know your customer"]
+  COMPLAINT: ["complaint redressal"]
+  ACT: ["telecommunications act 2023"]
+  HANDBOOK: ["consumer handbook"]
+  AIRTEL: [airtel]
+  JIO: [jio]
 paths:
   raw_data: data/raw
   processed_data: data/processed

@@ -17,7 +17,7 @@ from teleassist.ingestion.parse import (
     filter_english_units,
     infer_document_metadata,
 )
-from teleassist.ingestion.splitting import split_corpus_documents
+from teleassist.ingestion.splitting import split_corpus_families
 
 
 def _unit(text: str) -> dict:
@@ -122,8 +122,12 @@ def test_manual_text_file_is_chunked_and_manifested(tmp_path) -> None:
         for source in manifest["sources"]
     )
     assert all(
-        "doc_type" in chunk["metadata"] and "doc_title" in chunk["metadata"] for chunk in chunks
+        "doc_type" in chunk["metadata"]
+        and "doc_title" in chunk["metadata"]
+        and "family" in chunk["metadata"]
+        for chunk in chunks
     )
+    assert all("family" in source for source in manifest["sources"])
 
 
 def test_manual_doc_type_inference_rules() -> None:
@@ -151,9 +155,14 @@ def test_manual_doc_type_inference_rules() -> None:
     assert infer_document_metadata("pib_press_release.html")["doc_type"] == "faq_or_guide"
     assert infer_document_metadata("dot_alternate_digital_kyc_2026.pdf")["year"] == 2026
     assert infer_document_metadata("trai_mnp_2009_consolidated_2024.pdf")["year"] == 2024
-    assert (
-        infer_document_metadata("SIM card", source_type="wikipedia")["doc_type"] == "encyclopedia"
+    wikipedia_tags = infer_document_metadata("Know your customer", source_type="wikipedia")
+    assert wikipedia_tags["doc_type"] == "encyclopedia"
+    assert wikipedia_tags["family"] == "KYC"
+    assert wikipedia_tags["year"] is None
+    assert infer_document_metadata("SIM card", source_type="wikipedia")["family"] == (
+        "WIKIPEDIA_SIM_CARD"
     )
+    assert infer_document_metadata("trai_tcccpr_2nd_amendment_2025.pdf")["family"] == "TCCCPR"
 
 
 def test_wikipedia_fallback_is_trimmed_but_keeps_at_least_40_titles() -> None:
@@ -201,32 +210,52 @@ def test_english_filter_removes_small_devanagari_header_from_english_page() -> N
     assert "The regulation explains" in kept[0]["text"]
 
 
-def test_document_split_is_stratified_and_large_document_is_not_only_eval() -> None:
+def test_family_split_is_grouped_and_obeys_eval_limits() -> None:
     chunks = []
-    for source, doc_type, count in (
-        ("manual/large.pdf", "final_regulation", 80),
-        ("manual/small.pdf", "final_regulation", 1),
-        ("manual/guide.pdf", "faq_or_guide", 4),
-        ("wikipedia/SIM card", "encyclopedia", 4),
+    for source, source_type, doc_type, family, count in (
+        ("manual/trai_mnp_consolidated.pdf", "manual", "final_regulation", "MNP", 59),
+        ("manual/trai_tcpr_consolidated.pdf", "manual", "final_regulation", "TCPR", 48),
+        ("manual/complaint.pdf", "manual", "final_regulation", "COMPLAINT", 23),
+        ("manual/airtel_charter.pdf", "manual", "faq_or_guide", "AIRTEL", 62),
+        ("manual/dot_kyc.pdf", "manual", "final_regulation", "KYC", 10),
+        ("wikipedia/Know your customer", "wikipedia", "encyclopedia", "KYC", 15),
+        ("wikipedia/4G", "wikipedia", "encyclopedia", "WIKIPEDIA_4G", 18),
+        ("manual/tcccpr.pdf", "manual", "final_regulation", "TCCCPR", 207),
+        ("manual/qos.pdf", "manual", "final_regulation", "QOS", 200),
+        ("manual/jio_charter.pdf", "manual", "faq_or_guide", "JIO", 70),
+        ("manual/handbook.pdf", "manual", "faq_or_guide", "HANDBOOK", 69),
+        ("manual/act.pdf", "manual", "final_regulation", "ACT", 53),
+        ("wikipedia/3G", "wikipedia", "encyclopedia", "WIKIPEDIA_3G", 14),
     ):
         chunks.extend(
             {
                 "metadata": {
                     "source": source,
-                    "source_type": "manual" if source.startswith("manual/") else "wikipedia",
+                    "source_type": source_type,
                     "doc_type": doc_type,
                     "doc_title": source,
                     "year": None,
+                    "family": family,
                 }
             }
             for _ in range(count)
         )
 
-    split = split_corpus_documents(chunks, seed=42)
-    eval_types = {document["doc_type"] for document in split["eval_documents"]}
-    assert eval_types == {"final_regulation", "faq_or_guide", "encyclopedia"}
-    if any(document["source"] == "manual/large.pdf" for document in split["eval_documents"]):
-        assert len(split["eval_documents"]) > 1
+    split = split_corpus_families(chunks, seed=42)
+    train_families = {document["family"] for document in split["train_documents"]}
+    eval_families = {row["family"] for row in split["eval_families"]}
+    eval_chunks = split["eval_chunks"]
+    wiki_pages = sum(row["wikipedia_pages"] for row in split["eval_families"])
+    wiki_chunks = sum(row["wikipedia_chunks"] for row in split["eval_families"])
+
+    assert train_families.isdisjoint(eval_families)
+    assert {"MNP", "TCPR"} <= eval_families
+    assert len(eval_families & {"TCCCPR", "MNP", "TCPR", "QOS", "COMPLAINT"}) >= 3
+    assert eval_families & {"AIRTEL", "JIO"}
+    assert wiki_pages <= 2
+    assert wiki_chunks / eval_chunks <= 0.15
+    assert max(row["chunks"] / eval_chunks for row in split["eval_families"]) <= 0.30
+    assert abs(split["eval_share"] - 0.20) < 0.10
 
 
 def test_drafts_are_excluded_by_default(tmp_path) -> None:

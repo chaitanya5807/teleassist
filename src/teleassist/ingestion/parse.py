@@ -12,6 +12,8 @@ from typing import Any
 from bs4 import BeautifulSoup
 from pypdf import PdfReader
 
+from teleassist.config import DEFAULT_DOCUMENT_FAMILIES
+
 LOGGER = logging.getLogger(__name__)
 YEAR_PATTERN = re.compile(r"(?<!\d)(?:19|20)\d{2}(?!\d)")
 ENGLISH_WORD_PATTERN = re.compile(r"[A-Za-z]+(?:['’][A-Za-z]+)?")
@@ -65,6 +67,7 @@ def infer_document_metadata(
     *,
     source_type: str = "manual",
     title: str | None = None,
+    family_mapping: dict[str, list[str]] | None = None,
 ) -> dict[str, Any]:
     """Infer stable corpus tags from a source filename and its first page."""
     file_path = Path(path)
@@ -101,11 +104,30 @@ def infer_document_metadata(
         if years_in_page
         else None
     )
+    if source_type == "wikipedia":
+        year = None
     readable_title = title or stem.replace("_", " ").replace("-", " ").strip().title()
+    markers = family_mapping or DEFAULT_DOCUMENT_FAMILIES
+    family_key = re.sub(r"[^a-z0-9]+", " ", f"{stem} {readable_title}".lower()).strip()
+    family = next(
+        (
+            name
+            for name, values in markers.items()
+            if any(
+                re.sub(r"[^a-z0-9]+", " ", marker.lower()).strip() in family_key
+                for marker in values
+            )
+        ),
+        None,
+    )
+    if family is None:
+        slug = re.sub(r"[^A-Z0-9]+", "_", readable_title.upper()).strip("_") or "UNKNOWN"
+        family = f"WIKIPEDIA_{slug}" if source_type == "wikipedia" else f"MANUAL_{slug}"
     return {
         "doc_type": doc_type,
         "year": year,
         "doc_title": readable_title,
+        "family": family,
     }
 
 
@@ -239,6 +261,7 @@ def parse_document(
     *,
     source: str | None = None,
     source_type: str | None = None,
+    family_mapping: dict[str, list[str]] | None = None,
 ) -> list[dict[str, Any]]:
     """Parse one supported source file into text units with source/page/section metadata."""
     file_path = Path(path)
@@ -265,7 +288,10 @@ def parse_document(
             )
             return []
         doc_tags = infer_document_metadata(
-            file_path, page_texts[0] if page_texts else "", source_type=document_source_type
+            file_path,
+            page_texts[0] if page_texts else "",
+            source_type=document_source_type,
+            family_mapping=family_mapping,
         )
         return [
             {
@@ -291,7 +317,11 @@ def parse_document(
         if not text:
             return []
         doc_tags = infer_document_metadata(
-            file_path, text, source_type=document_source_type, title=title
+            file_path,
+            text,
+            source_type=document_source_type,
+            title=title,
+            family_mapping=family_mapping,
         )
         return [
             {
@@ -312,7 +342,9 @@ def parse_document(
         text = clean_text(file_path.read_text(encoding="utf-8", errors="replace"))
         if not text:
             return []
-        doc_tags = infer_document_metadata(file_path, text, source_type=document_source_type)
+        doc_tags = infer_document_metadata(
+            file_path, text, source_type=document_source_type, family_mapping=family_mapping
+        )
         return [
             {
                 "text": text,
@@ -333,19 +365,29 @@ def parse_document(
             item = json.loads(line)
             text = clean_text(str(item.get("text", "")))
             if text:
+                item_source_type = item.get("source_type", "wikipedia")
+                item_title = item.get("doc_title", item.get("title", f"record {line_number}"))
+                family_tags = infer_document_metadata(
+                    item_title,
+                    text,
+                    source_type=item_source_type,
+                    title=item_title,
+                    family_mapping=family_mapping,
+                )
                 records.append(
                     {
                         "text": text,
                         "metadata": {
                             "source": item.get("source", source_name),
-                            "source_type": item.get("source_type", "wikipedia"),
+                            "source_type": item_source_type,
                             "page": None,
                             "section": item.get("title", f"record {line_number}"),
                             "license_note": item.get("license_note"),
                             "retrieved_at": item.get("retrieved_at"),
                             "doc_type": item.get("doc_type", "encyclopedia"),
-                            "year": item.get("year"),
-                            "doc_title": item.get("doc_title", item.get("title", "")),
+                            "year": None if item_source_type == "wikipedia" else item.get("year"),
+                            "doc_title": item_title,
+                            "family": family_tags["family"],
                         },
                     }
                 )

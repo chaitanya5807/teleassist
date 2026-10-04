@@ -6,6 +6,19 @@ from typing import Any
 import yaml
 from pydantic import BaseModel, Field
 
+DEFAULT_DOCUMENT_FAMILIES = {
+    "TCCCPR": ["tcccpr"],
+    "MNP": ["mnp"],
+    "TCPR": ["tcpr"],
+    "QOS": ["qos"],
+    "KYC": ["kyc", "ekyc", "know your customer"],
+    "COMPLAINT": ["complaint redressal"],
+    "ACT": ["telecommunications act 2023"],
+    "HANDBOOK": ["consumer handbook"],
+    "AIRTEL": ["airtel"],
+    "JIO": ["jio"],
+}
+
 
 class PathConfig(BaseModel):
     """Project data and artifact locations, relative to the project root."""
@@ -49,6 +62,11 @@ class AppConfig(BaseModel):
     seed: int = 42
     include_drafts: bool = False
     max_doc_share_for_sampling: float = Field(default=0.15, gt=0, le=1)
+    document_families: dict[str, list[str]] = Field(
+        default_factory=lambda: {
+            family: markers.copy() for family, markers in DEFAULT_DOCUMENT_FAMILIES.items()
+        }
+    )
     paths: PathConfig = Field(default_factory=PathConfig)
     chunking: ChunkingConfig = Field(default_factory=ChunkingConfig)
     retrieval: RetrievalConfig = Field(default_factory=RetrievalConfig)
