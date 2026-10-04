@@ -1,7 +1,11 @@
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("setup", "data", "index", "sft-data", "train", "eval", "report", "serve", "test", "lint", "docker-build")]
-    [string]$Task = ""
+    [ValidateSet("setup", "data", "build-index", "search", "sft-data", "train", "eval", "report", "serve", "test", "lint", "docker-build")]
+    [string]$Task = "",
+    [Parameter(Position = 1)]
+    [string]$Query = "",
+    [ValidateSet("bm25", "dense", "hybrid", "hybrid_rerank")]
+    [string]$Mode = "hybrid_rerank"
 )
 
 Set-StrictMode -Version Latest
@@ -38,7 +42,19 @@ function Invoke-Task {
             )
             & $Python @ChunkArgs
         }
-        "index" { Write-Host "not implemented until Phase 3" }
+        "build-index" {
+            & $Python -m teleassist.retrieval.pipeline build-index `
+                --chunks (Join-Path $PSScriptRoot "data\processed\chunks.jsonl") `
+                --index (Join-Path $PSScriptRoot "data\processed\dense_index.npz") `
+                --config (Join-Path $PSScriptRoot "configs\default.yaml")
+        }
+        "search" {
+            if (-not $Query) { throw 'Usage: .\tasks.ps1 search "query" -Mode hybrid_rerank' }
+            & $Python -m teleassist.retrieval.pipeline search $Query --mode $Mode `
+                --chunks (Join-Path $PSScriptRoot "data\processed\chunks.jsonl") `
+                --index (Join-Path $PSScriptRoot "data\processed\dense_index.npz") `
+                --config (Join-Path $PSScriptRoot "configs\default.yaml")
+        }
         "sft-data" { Write-Host "not implemented until Phase 5" }
         "train" { Write-Host "not implemented until Phase 6" }
         "eval" { Write-Host "not implemented until Phase 7" }
@@ -52,6 +68,6 @@ function Invoke-Task {
 if ($Task) {
     Invoke-Task -Name $Task
 } else {
-    Write-Host "Usage: .\tasks.ps1 <setup|data|index|sft-data|train|eval|report|serve|test|lint|docker-build>"
+    Write-Host "Usage: .\tasks.ps1 <setup|data|build-index|search|sft-data|train|eval|report|serve|test|lint|docker-build>"
     exit 1
 }

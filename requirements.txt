@@ -15,7 +15,8 @@ pytest==8.3.4
 ruff==0.8.6
 sentence-transformers==3.3.1
 streamlit==1.41.1
-torch==2.5.1
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.5.1+cpu
 transformers==4.47.1
 trl==0.13.0
 uvicorn[standard]==0.34.0
