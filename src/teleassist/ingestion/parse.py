@@ -254,6 +254,7 @@ def fix_extraction_artifacts(
     spaced_words = re.compile(r"(?<![A-Za-z])([A-Za-z]+)[ \t]+([A-Za-z]+)(?![A-Za-z])")
     spaced_hyphen = re.compile(r"(?<![A-Za-z])([A-Za-z]+)\s*-\s*([A-Za-z]+)(?![A-Za-z])")
     split_initial = re.compile(r"(?<![A-Za-z])([A-Z])[ \t]+([a-z]{3,})(?![A-Za-z])")
+    split_final = re.compile(r"(?<![A-Za-z])([A-Za-z]{3,})[ \t]+([a-z])(?![A-Za-z])")
 
     def valid_piece(word: str, joined: str) -> bool:
         lowered = word.lower()
@@ -286,6 +287,19 @@ def fix_extraction_artifacts(
             return joined.capitalize()
 
         text = split_initial.sub(repair_initial, text)
+
+        def repair_final(match: re.Match[str]) -> str:
+            left, right = match.group(1), match.group(2)
+            joined = (left + right).lower()
+            if vocabulary[joined] < 2 or vocabulary[left.lower()] >= max(
+                3, vocabulary[joined] * 0.05
+            ):
+                return match.group(0)
+            replacement = joined.capitalize() if left[:1].isupper() else joined
+            fixes[f"{match.group(0)} -> {replacement}"] += 1
+            return replacement
+
+        text = split_final.sub(repair_final, text)
         for _ in range(3):
             changed = False
 
