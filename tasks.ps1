@@ -25,6 +25,7 @@ function Invoke-Task {
                 "-m", "teleassist.ingestion.download",
                 "--output-dir", (Join-Path $PSScriptRoot "data\raw"),
                 "--bundle-path", (Join-Path $PSScriptRoot "data\fallback\wikipedia_telecom.jsonl")
+                "--config", (Join-Path $PSScriptRoot "configs\default.yaml")
             )
             & $Python @DownloadArgs
             $ChunkArgs = @(

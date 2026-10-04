@@ -47,6 +47,7 @@ class AppConfig(BaseModel):
     """Validated application configuration."""
 
     seed: int = 42
+    include_drafts: bool = False
     paths: PathConfig = Field(default_factory=PathConfig)
     chunking: ChunkingConfig = Field(default_factory=ChunkingConfig)
     retrieval: RetrievalConfig = Field(default_factory=RetrievalConfig)
@@ -59,4 +60,3 @@ def load_config(path: str | Path) -> AppConfig:
     with config_path.open(encoding="utf-8") as config_file:
         raw_config: Any = yaml.safe_load(config_file) or {}
     return AppConfig.model_validate(raw_config)
-

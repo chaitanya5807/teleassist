@@ -17,7 +17,8 @@ from urllib.parse import unquote, urlsplit
 import requests
 from pypdf.errors import PdfReadError
 
-from teleassist.ingestion.parse import parse_document
+from teleassist.config import load_config
+from teleassist.ingestion.parse import infer_document_metadata, parse_document, pdf_text_stats
 
 LOGGER = logging.getLogger(__name__)
 USER_AGENT = "TeleAssist/0.1 (student project; contact: chaitanyatallapudi58@gmail.com)"
@@ -38,22 +39,17 @@ WIKIPEDIA_TITLES = (
     "4G",
     "3G",
     "Broadband",
-    "Internet access",
-    "Optical fiber",
-    "Voice over IP",
     "Short Message Service",
     "Prepaid mobile phone",
     "Postpaid mobile phone",
     "Know your customer",
     "Telecommunications satellites",
     "Telephone numbering plan",
-    "Wireless communication",
     "Radio spectrum",
     "Spectrum auction",
     "Telephone solicitation",
     "Call detail record",
     "Internet service provider",
-    "Telecommunications equipment",
     "Mobile virtual network operator",
     "International Mobile Subscriber Identity",
     "International Mobile Equipment Identity",
@@ -62,23 +58,33 @@ WIKIPEDIA_TITLES = (
     "Internet in India",
     "Data roaming",
     "Roaming",
-    "Telephone",
-    "Telephone call",
-    "Customer service",
-    "Telephone exchange",
-    "Public switched telephone network",
-    "Landline",
     "Wireless Internet service provider",
-    "Communications satellite",
-    "Radio communication",
-    "Electromagnetic spectrum",
-    "Wi-Fi",
     "LTE (telecommunication)",
     "Telecommunications policy of India",
     "Consumer protection",
     "Do Not Call Registry",
     "Do Not Disturb (telecommunications)",
     "Unsolicited commercial communication",
+)
+
+DROPPED_WIKIPEDIA_TITLES = frozenset(
+    {
+        "Optical fiber",
+        "Communications satellite",
+        "Telephone exchange",
+        "Electromagnetic spectrum",
+        "Radio communication",
+        "Wi-Fi",
+        "Voice over IP",
+        "Landline",
+        "Public switched telephone network",
+        "Telephone",
+        "Telephone call",
+        "Customer service",
+        "Wireless communication",
+        "Internet access",
+        "Telecommunications equipment",
+    }
 )
 
 
@@ -200,6 +206,7 @@ def download_sources(
     bundle_path: str | Path | None = None,
     max_retries: int = 5,
     min_request_interval: float = 1.0,
+    include_drafts: bool = False,
     sleep: Callable[[float], None] = time.sleep,
     monotonic: Callable[[], float] = time.monotonic,
 ) -> list[dict[str, Any]]:
@@ -210,6 +217,8 @@ def download_sources(
         raise ValueError("min_request_interval must be at least one second")
     raw_dir = Path(output_dir)
     raw_dir.mkdir(parents=True, exist_ok=True)
+    for dropped_title in DROPPED_WIKIPEDIA_TITLES:
+        (raw_dir / _safe_filename(dropped_title)).unlink(missing_ok=True)
     client = session or requests.Session()
     client.headers.update({"User-Agent": USER_AGENT})
     records: list[dict[str, Any]] = []
@@ -229,6 +238,7 @@ def download_sources(
             "source_type": "wikipedia",
             "status": "failed",
             "char_count": 0,
+            **infer_document_metadata(title, source_type="wikipedia", title=title),
         }
         try:
             cached = cache.get(title)
@@ -245,6 +255,9 @@ def download_sources(
                         "file": file_name,
                         "status": "duplicate_redirect" if is_duplicate else "cached",
                         "char_count": len(text),
+                        **infer_document_metadata(
+                            actual_title, text, source_type="wikipedia", title=actual_title
+                        ),
                     }
                 )
                 if not is_duplicate:
@@ -256,6 +269,9 @@ def download_sources(
                             "license_note": cached.get("license_note", WIKIPEDIA_LICENSE),
                             "source_type": "wikipedia",
                             "text": text,
+                            **infer_document_metadata(
+                                actual_title, text, source_type="wikipedia", title=actual_title
+                            ),
                         }
                     )
                 records.append(record)
@@ -291,6 +307,9 @@ def download_sources(
                         "file": file_name,
                         "status": "duplicate_redirect",
                         "char_count": len(text),
+                        **infer_document_metadata(
+                            actual_title, text, source_type="wikipedia", title=actual_title
+                        ),
                     }
                 )
                 records.append(record)
@@ -304,6 +323,9 @@ def download_sources(
                     "status": "downloaded",
                     "file": file_name,
                     "char_count": len(text),
+                    **infer_document_metadata(
+                        actual_title, text, source_type="wikipedia", title=actual_title
+                    ),
                 }
             )
             docs.append(
@@ -314,6 +336,9 @@ def download_sources(
                     "license_note": WIKIPEDIA_LICENSE,
                     "source_type": "wikipedia",
                     "text": text,
+                    **infer_document_metadata(
+                        actual_title, text, source_type="wikipedia", title=actual_title
+                    ),
                 }
             )
         except (requests.RequestException, ValueError, KeyError, TypeError) as exc:
@@ -333,9 +358,36 @@ def download_sources(
         relative_path = path.relative_to(raw_dir).as_posix()
         manual_status = "available"
         char_count = 0
+        pages = 1
+        doc_tags: dict[str, Any] = infer_document_metadata(path)
         try:
-            parsed = parse_document(path, source=relative_path, source_type="manual")
-            char_count = sum(len(unit["text"]) for unit in parsed)
+            if path.suffix.lower() == ".pdf":
+                stats = pdf_text_stats(path)
+                pages = int(stats["pages"])
+                char_count = int(stats["characters"])
+                first_text_units = (
+                    parse_document(path, source=relative_path, source_type="manual")
+                    if float(stats["average_chars_per_page"]) >= 200
+                    else []
+                )
+                if float(stats["average_chars_per_page"]) < 200:
+                    manual_status = "likely_scanned_skipped"
+                    LOGGER.warning(
+                        "Manual document %s likely scanned, skipped (%.1f chars/page)",
+                        relative_path,
+                        float(stats["average_chars_per_page"]),
+                    )
+                    first_page = ""
+                else:
+                    first_page = first_text_units[0]["text"] if first_text_units else ""
+                doc_tags = infer_document_metadata(path, first_page, source_type="manual")
+            else:
+                parsed = parse_document(path, source=relative_path, source_type="manual")
+                char_count = sum(len(unit["text"]) for unit in parsed)
+                first_page = parsed[0]["text"] if parsed else ""
+                doc_tags = infer_document_metadata(path, first_page, source_type="manual")
+            if doc_tags["doc_type"] == "draft_or_consultation" and not include_drafts:
+                manual_status = "excluded_draft"
         except (OSError, ValueError, PdfReadError) as exc:
             manual_status = "parse_error"
             LOGGER.warning("Could not parse manual source %s: %s", relative_path, exc)
@@ -349,6 +401,8 @@ def download_sources(
                 "source_type": "manual",
                 "status": manual_status,
                 "char_count": char_count,
+                "pages": pages,
+                **doc_tags,
             }
         )
 
@@ -362,25 +416,18 @@ def download_sources(
     if bundle_path is not None and docs:
         bundle = Path(bundle_path)
         bundle.parent.mkdir(parents=True, exist_ok=True)
-        previous_docs: dict[str, dict[str, Any]] = {}
-        if bundle.exists():
-            for line in bundle.read_text(encoding="utf-8").splitlines():
-                if not line.strip():
-                    continue
-                try:
-                    previous = json.loads(line)
-                except json.JSONDecodeError:
-                    LOGGER.warning("Skipping malformed existing fallback entry in %s", bundle)
-                    continue
-                previous_docs[previous["title"]] = previous
-        previous_docs.update({doc["title"]: doc for doc in docs})
+        current_docs = {doc["title"]: doc for doc in docs}
+        for doc in current_docs.values():
+            doc.update(
+                infer_document_metadata(
+                    doc["title"], doc.get("text", ""), source_type="wikipedia", title=doc["title"]
+                )
+            )
         bundle.write_text(
-            "".join(
-                json.dumps(doc, ensure_ascii=False) + "\n" for doc in previous_docs.values()
-            ),
+            "".join(json.dumps(doc, ensure_ascii=False) + "\n" for doc in current_docs.values()),
             encoding="utf-8",
         )
-        LOGGER.info("Bundled %d distinct documents in %s", len(previous_docs), bundle)
+        LOGGER.info("Bundled %d distinct documents in %s", len(current_docs), bundle)
     LOGGER.info("Downloaded %d of %d sources", len(docs), len(titles))
     return records
 
@@ -395,9 +442,16 @@ def main() -> None:
         default=Path("data/fallback/wikipedia_telecom.jsonl"),
     )
     parser.add_argument("--timeout", type=float, default=20.0)
+    parser.add_argument("--config", type=Path, default=Path("configs/default.yaml"))
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    download_sources(args.output_dir, timeout=args.timeout, bundle_path=args.bundle_path)
+    config = load_config(args.config)
+    download_sources(
+        args.output_dir,
+        timeout=args.timeout,
+        bundle_path=args.bundle_path,
+        include_drafts=config.include_drafts,
+    )
 
 
 if __name__ == "__main__":

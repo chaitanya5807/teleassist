@@ -97,14 +97,14 @@ def chunk_document(
         pieces = _recursive_split(text, chunk_size)
         current: list[int] | list[str] = []
 
-        def emit(
-            tokens: list[int] | list[str], chunk_metadata: dict[str, Any] = metadata
-        ) -> None:
+        def emit(tokens: list[int] | list[str], chunk_metadata: dict[str, Any] = metadata) -> None:
             content = _decode(tokens)
             if content.strip():
-                identity = json.dumps(
-                    chunk_metadata, sort_keys=True, ensure_ascii=False, default=str
-                ) + "\n" + content
+                identity = (
+                    json.dumps(chunk_metadata, sort_keys=True, ensure_ascii=False, default=str)
+                    + "\n"
+                    + content
+                )
                 occurrence = occurrences.get(identity, 0)
                 occurrences[identity] = occurrence + 1
                 chunks.append(
@@ -138,31 +138,46 @@ def build_chunks(
     chunk_size: int = 512,
     overlap: int = 64,
     manual_dir: str | Path | None = None,
+    include_drafts: bool = False,
 ) -> list[dict[str, Any]]:
     """Parse the corpus and optional manual files, then write chunks as JSON Lines."""
     source_dir = Path(input_dir)
     documents: list[dict[str, Any]] = []
     paths = [source_dir] if source_dir.is_file() else sorted(source_dir.rglob("*"))
     for path in paths:
-        if not path.is_file() or path.name.upper() == "MANIFEST.JSON":
+        if (
+            not path.is_file()
+            or path.name.upper() == "MANIFEST.JSON"
+            or "excluded" in {part.lower() for part in path.parts}
+        ):
             continue
         try:
-            documents.extend(parse_document(path))
+            parsed = parse_document(path)
+            documents.extend(
+                unit
+                for unit in parsed
+                if include_drafts
+                or unit.get("metadata", {}).get("doc_type") != "draft_or_consultation"
+            )
         except (OSError, ValueError, json.JSONDecodeError, PdfReadError) as exc:
             LOGGER.warning("Skipping source %s during parsing: %s", path, exc)
     if manual_dir is not None:
         manual_root = Path(manual_dir)
         if manual_root.exists():
             for path in sorted(manual_root.rglob("*")):
-                if not path.is_file():
+                if not path.is_file() or "excluded" in {part.lower() for part in path.parts}:
                     continue
                 if path.suffix.lower() not in {".pdf", ".html", ".htm", ".txt"}:
                     LOGGER.warning("Skipping unsupported manual document %s", path)
                     continue
                 source = f"manual/{path.relative_to(manual_root).as_posix()}"
                 try:
+                    parsed = parse_document(path, source=source, source_type="manual")
                     documents.extend(
-                        parse_document(path, source=source, source_type="manual")
+                        unit
+                        for unit in parsed
+                        if include_drafts
+                        or unit.get("metadata", {}).get("doc_type") != "draft_or_consultation"
                     )
                 except (OSError, ValueError, json.JSONDecodeError, PdfReadError) as exc:
                     LOGGER.warning("Skipping manual source %s during parsing: %s", path, exc)
@@ -177,17 +192,13 @@ def build_chunks(
     return chunks
 
 
-def format_source_table(
-    manifest_path: str | Path, chunks: list[dict[str, Any]]
-) -> str:
+def format_source_table(manifest_path: str | Path, chunks: list[dict[str, Any]]) -> str:
     """Format per-source status, extracted character count, and chunk count."""
     manifest_file = Path(manifest_path)
     if not manifest_file.is_file():
         return f"Source manifest not found: {manifest_file}"
     manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
-    chunk_counts = Counter(
-        str(chunk.get("metadata", {}).get("source", "")) for chunk in chunks
-    )
+    chunk_counts = Counter(str(chunk.get("metadata", {}).get("source", "")) for chunk in chunks)
     rows: list[tuple[str, str, int, int]] = []
     for source in manifest.get("sources", []):
         source_type = source.get("source_type", "wikipedia")
@@ -237,6 +248,7 @@ def main() -> None:
         chunk_size=args.chunk_size or config.chunking.chunk_size,
         overlap=config.chunking.overlap if args.overlap is None else args.overlap,
         manual_dir=args.manual_dir,
+        include_drafts=config.include_drafts,
     )
     print(format_source_table(args.manifest, chunks))
 

@@ -7,7 +7,12 @@ from pypdf import PdfWriter
 from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 
 from teleassist.ingestion.chunking import _tokens, build_chunks, chunk_document
-from teleassist.ingestion.download import download_sources
+from teleassist.ingestion.download import (
+    DROPPED_WIKIPEDIA_TITLES,
+    WIKIPEDIA_TITLES,
+    download_sources,
+)
+from teleassist.ingestion.parse import infer_document_metadata
 
 
 def _unit(text: str) -> dict:
@@ -73,7 +78,8 @@ def test_manual_text_file_is_chunked_and_manifested(tmp_path) -> None:
         {NameObject("/Font"): DictionaryObject({NameObject("/F1"): font_ref})}
     )
     content = DecodedStreamObject()
-    content.set_data(b"BT /F1 12 Tf 20 100 Td (PDF telecom manual text.) Tj ET")
+    pdf_text = "PDF telecom manual text for subscribers and their account support. " * 8
+    content.set_data(f"BT /F1 12 Tf 20 100 Td ({pdf_text}) Tj ET".encode())
     page[NameObject("/Contents")] = writer._add_object(content)
     writer.write(manual_dir / "terms.pdf")
 
@@ -96,6 +102,56 @@ def test_manual_text_file_is_chunked_and_manifested(tmp_path) -> None:
     }
     assert all(source["source_type"] == "manual" for source in manifest["sources"])
     assert all(source["status"] == "available" for source in manifest["sources"])
+    assert all(
+        "doc_type" in source and "year" in source and "doc_title" in source
+        for source in manifest["sources"]
+    )
+    assert all(
+        "doc_type" in chunk["metadata"] and "doc_title" in chunk["metadata"] for chunk in chunks
+    )
+
+
+def test_manual_doc_type_inference_rules() -> None:
+    assert (
+        infer_document_metadata("trai_consumer_handbook_2018_english.pdf")["doc_type"]
+        == "faq_or_guide"
+    )
+    assert (
+        infer_document_metadata("trai_ekyc_recommendations_2017.pdf")["doc_type"]
+        == "recommendation"
+    )
+    assert (
+        infer_document_metadata("Consultation_Paper_2024.pdf")["doc_type"]
+        == "draft_or_consultation"
+    )
+    assert (
+        infer_document_metadata("trai_mnp_9th_amendment_2024.pdf")["doc_type"] == "final_regulation"
+    )
+    assert infer_document_metadata("airtel_consumer_charter.pdf")["doc_type"] == "faq_or_guide"
+    assert (
+        infer_document_metadata("airtel_telecom_consumers_charter.pdf")["doc_type"]
+        == "faq_or_guide"
+    )
+    assert infer_document_metadata("jio_telecom_consumer_chart.pdf")["doc_type"] == "faq_or_guide"
+    assert infer_document_metadata("pib_press_release.html")["doc_type"] == "faq_or_guide"
+    assert infer_document_metadata("dot_alternate_digital_kyc_2026.pdf")["year"] == 2026
+    assert infer_document_metadata("trai_mnp_2009_consolidated_2024.pdf")["year"] == 2024
+    assert (
+        infer_document_metadata("SIM card", source_type="wikipedia")["doc_type"] == "encyclopedia"
+    )
+
+
+def test_wikipedia_fallback_is_trimmed_but_keeps_at_least_40_titles() -> None:
+    assert len(WIKIPEDIA_TITLES) >= 40
+    assert DROPPED_WIKIPEDIA_TITLES.isdisjoint(WIKIPEDIA_TITLES)
+
+
+def test_drafts_are_excluded_by_default(tmp_path) -> None:
+    manual_dir = tmp_path / "manual"
+    manual_dir.mkdir()
+    (manual_dir / "Draft_Regulation_2024.txt").write_text("Draft text. " * 100, encoding="utf-8")
+    chunks = build_chunks(tmp_path / "empty", tmp_path / "chunks.jsonl", manual_dir=manual_dir)
+    assert chunks == []
 
 
 def test_wikipedia_downloader_retries_with_retry_after_and_backoff(tmp_path) -> None:
