@@ -1,6 +1,6 @@
 import pytest
 
-from teleassist.retrieval.metrics import evaluate_retrieval
+from teleassist.evaluation.metrics import evaluate_retrieval
 
 
 def test_recall_mrr_and_hit_rate() -> None:

@@ -1,16 +1,16 @@
 {
   "seed": 42,
   "target_eval_fraction": 0.2,
-  "total_chunks": 1165,
-  "eval_chunks": 233,
-  "eval_share": 0.2,
-  "train_chunks": 932,
-  "train_share": 0.8,
+  "total_chunks": 1158,
+  "eval_chunks": 232,
+  "eval_share": 0.2003454231433506,
+  "train_chunks": 926,
+  "train_share": 0.7996545768566494,
   "eval_families": [
     {
       "family": "AIRTEL",
-      "chunks": 62,
-      "share": 0.26609442060085836,
+      "chunks": 61,
+      "share": 0.2629310344827586,
       "wikipedia_pages": 0,
       "wikipedia_chunks": 0,
       "documents": [
@@ -20,7 +20,7 @@
     {
       "family": "COMPLAINT",
       "chunks": 23,
-      "share": 0.09871244635193133,
+      "share": 0.09913793103448276,
       "wikipedia_pages": 0,
       "wikipedia_chunks": 0,
       "documents": [
@@ -30,7 +30,7 @@
     {
       "family": "KYC",
       "chunks": 25,
-      "share": 0.1072961373390558,
+      "share": 0.10775862068965517,
       "wikipedia_pages": 1,
       "wikipedia_chunks": 15,
       "documents": [
@@ -43,7 +43,7 @@
     {
       "family": "MNP",
       "chunks": 59,
-      "share": 0.2532188841201717,
+      "share": 0.2543103448275862,
       "wikipedia_pages": 0,
       "wikipedia_chunks": 0,
       "documents": [
@@ -54,7 +54,7 @@
     {
       "family": "TCPR",
       "chunks": 48,
-      "share": 0.20600858369098712,
+      "share": 0.20689655172413793,
       "wikipedia_pages": 0,
       "wikipedia_chunks": 0,
       "documents": [
@@ -65,7 +65,7 @@
     {
       "family": "WIKIPEDIA_SMS",
       "chunks": 16,
-      "share": 0.06866952789699571,
+      "share": 0.06896551724137931,
       "wikipedia_pages": 1,
       "wikipedia_chunks": 16,
       "documents": [
@@ -418,7 +418,7 @@
       "doc_title": "Jio Telecom Consumer Chart",
       "year": null,
       "family": "JIO",
-      "chunk_count": 70
+      "chunk_count": 68
     },
     {
       "source": "manual/pib_qos_2024.html",
@@ -454,7 +454,7 @@
       "doc_title": "Telecommunications Act 2023",
       "year": 2023,
       "family": "ACT",
-      "chunk_count": 53
+      "chunk_count": 52
     },
     {
       "source": "manual/trai_consumer_handbook_2018_english.pdf",
@@ -463,7 +463,7 @@
       "doc_title": "Trai Consumer Handbook 2018 English",
       "year": 2018,
       "family": "HANDBOOK",
-      "chunk_count": 69
+      "chunk_count": 68
     },
     {
       "source": "manual/trai_qos_2024.pdf",
@@ -472,7 +472,7 @@
       "doc_title": "Trai Qos 2024",
       "year": 2024,
       "family": "QOS",
-      "chunk_count": 194
+      "chunk_count": 192
     },
     {
       "source": "manual/trai_tcccpr_2018_consolidated_2026.pdf",
@@ -519,7 +519,7 @@
       "doc_title": "Airtel Telecom Consumers Charter",
       "year": null,
       "family": "AIRTEL",
-      "chunk_count": 62
+      "chunk_count": 61
     },
     {
       "source": "manual/dot_alternate_digital_kyc_2026.pdf",

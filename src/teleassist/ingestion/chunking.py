@@ -7,7 +7,7 @@ import hashlib
 import json
 import logging
 import re
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
@@ -17,7 +17,11 @@ import tiktoken
 from pypdf.errors import PdfReadError
 
 from teleassist.config import load_config
-from teleassist.ingestion.parse import filter_english_units, parse_document
+from teleassist.ingestion.parse import (
+    filter_english_units,
+    fix_extraction_artifacts,
+    parse_document,
+)
 from teleassist.ingestion.splitting import split_corpus_families, write_document_split
 
 LOGGER = logging.getLogger(__name__)
@@ -154,15 +158,7 @@ def build_chunks(
         ):
             continue
         try:
-            parsed = filter_english_units(
-                parse_document(path, family_mapping=family_mapping), document_name=str(path)
-            )
-            documents.extend(
-                unit
-                for unit in parsed
-                if include_drafts
-                or unit.get("metadata", {}).get("doc_type") != "draft_or_consultation"
-            )
+            documents.extend(parse_document(path, family_mapping=family_mapping))
         except (OSError, ValueError, json.JSONDecodeError, PdfReadError) as exc:
             LOGGER.warning("Skipping source %s during parsing: %s", path, exc)
     if manual_dir is not None:
@@ -176,23 +172,29 @@ def build_chunks(
                     continue
                 source = f"manual/{path.relative_to(manual_root).as_posix()}"
                 try:
-                    parsed = filter_english_units(
+                    documents.extend(
                         parse_document(
                             path,
                             source=source,
                             source_type="manual",
                             family_mapping=family_mapping,
-                        ),
-                        document_name=source,
-                    )
-                    documents.extend(
-                        unit
-                        for unit in parsed
-                        if include_drafts
-                        or unit.get("metadata", {}).get("doc_type") != "draft_or_consultation"
+                        )
                     )
                 except (OSError, ValueError, json.JSONDecodeError, PdfReadError) as exc:
                     LOGGER.warning("Skipping manual source %s during parsing: %s", path, exc)
+    documents, _ = fix_extraction_artifacts(documents)
+    by_source: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for unit in documents:
+        by_source[str(unit.get("metadata", {}).get("source", "unknown"))].append(unit)
+    cleaned_documents = []
+    for source, source_units in by_source.items():
+        english_units = filter_english_units(source_units, document_name=source)
+        cleaned_documents.extend(
+            unit
+            for unit in english_units
+            if include_drafts or unit.get("metadata", {}).get("doc_type") != "draft_or_consultation"
+        )
+    documents = cleaned_documents
     chunks = chunk_document(documents, chunk_size=chunk_size, overlap=overlap)
     out = Path(output_path)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -264,7 +266,16 @@ def main() -> None:
         include_drafts=config.include_drafts,
         family_mapping=config.document_families,
     )
-    document_split = split_corpus_families(chunks, seed=config.seed)
+    retained_eval_families: set[str] | None = None
+    if args.split_output.is_file():
+        previous_split = json.loads(args.split_output.read_text(encoding="utf-8"))
+        if previous_split.get("eval_families"):
+            retained_eval_families = {
+                family["family"] for family in previous_split["eval_families"]
+            }
+    document_split = split_corpus_families(
+        chunks, seed=config.seed, eval_family_names=retained_eval_families
+    )
     write_document_split(args.split_output, document_split)
     LOGGER.info(
         "Wrote family split: %d train, %d eval to %s",

@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from teleassist.retrieval.metrics import evaluate_retrieval
+from teleassist.evaluation.metrics import evaluate_retrieval
 from teleassist.retrieval.pipeline import Retriever
 
 

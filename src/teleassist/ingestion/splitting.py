@@ -14,9 +14,13 @@ OPERATOR_FAMILIES = frozenset({"AIRTEL", "JIO"})
 
 
 def split_corpus_families(
-    chunks: list[dict[str, Any]], *, seed: int = 42, eval_fraction: float = 0.2
+    chunks: list[dict[str, Any]],
+    *,
+    seed: int = 42,
+    eval_fraction: float = 0.2,
+    eval_family_names: set[str] | None = None,
 ) -> dict[str, Any]:
-    """Choose eval families near the target share while enforcing corpus constraints."""
+    """Choose eval families, or preserve a supplied family assignment."""
     if not 0 < eval_fraction < 1:
         raise ValueError("eval_fraction must be between zero and one")
 
@@ -87,9 +91,20 @@ def split_corpus_families(
 
     rng = random.Random(seed)
     best_score: tuple[float, float, int] | None = None
-    best_eval: tuple[str, ...] | None = None
+    if eval_family_names is not None:
+        if not eval_family_names:
+            raise ValueError("A preserved eval family assignment cannot be empty")
+        missing = eval_family_names - present
+        if missing:
+            raise ValueError(
+                "Preserved eval families have no chunks after cleaning: " f"{sorted(missing)}"
+            )
+        best_eval: tuple[str, ...] | None = tuple(sorted(eval_family_names))
+    else:
+        best_eval = None
     tied_candidates = 0
-    for mask in range(1 << len(non_wikipedia)):
+    candidate_masks = () if best_eval is not None else range(1 << len(non_wikipedia))
+    for mask in candidate_masks:
         selected_base = {family for bit, family in enumerate(non_wikipedia) if mask & (1 << bit)}
         if not mandatory_regulations <= selected_base:
             continue

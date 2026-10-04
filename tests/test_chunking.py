@@ -257,6 +257,18 @@ def test_family_split_is_grouped_and_obeys_eval_limits() -> None:
     assert max(row["chunks"] / eval_chunks for row in split["eval_families"]) <= 0.30
     assert abs(split["eval_share"] - 0.20) < 0.10
 
+    preserved = split_corpus_families(
+        chunks,
+        seed=42,
+        eval_family_names={"MNP", "TCPR", "COMPLAINT", "AIRTEL"},
+    )
+    assert {row["family"] for row in preserved["eval_families"]} == {
+        "MNP",
+        "TCPR",
+        "COMPLAINT",
+        "AIRTEL",
+    }
+
 
 def test_drafts_are_excluded_by_default(tmp_path) -> None:
     manual_dir = tmp_path / "manual"

@@ -397,6 +397,7 @@ def download_sources(
                         source=relative_path,
                         source_type="manual",
                         family_mapping=family_mapping,
+                        report_pdf_cleaning=False,
                     )
                     if float(stats["average_chars_per_page"]) >= 200
                     else []

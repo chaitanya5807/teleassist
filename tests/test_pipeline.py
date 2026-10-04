@@ -2,10 +2,10 @@ import json
 
 import numpy as np
 
+from teleassist.evaluation.run_retrieval_eval import run_eval
 from teleassist.retrieval.dense import DenseIndex
 from teleassist.retrieval.pipeline import Retriever
 from teleassist.retrieval.reranker import CrossEncoderReranker
-from teleassist.run_retrieval_eval import run_eval
 
 
 class FixedRetriever:
