@@ -1,0 +1,88 @@
+QA quality by document:
+https://en.wikipedia.org/wiki/3G: usable=11 unusable=3
+https://en.wikipedia.org/wiki/4G: usable=16 unusable=2
+https://en.wikipedia.org/wiki/5G: usable=15 unusable=5
+https://en.wikipedia.org/wiki/Broadband: usable=10 unusable=0
+https://en.wikipedia.org/wiki/Call_detail_record: usable=3 unusable=0
+https://en.wikipedia.org/wiki/Cellular_network: usable=17 unusable=0
+https://en.wikipedia.org/wiki/Consumer_protection: usable=10 unusable=0
+https://en.wikipedia.org/wiki/Department_of_Telecommunications_%28India%29: usable=2 unusable=0
+https://en.wikipedia.org/wiki/Do_Not_Disturb_%28telecommunications%29: usable=1 unusable=0
+https://en.wikipedia.org/wiki/ESIM: usable=2 unusable=1
+https://en.wikipedia.org/wiki/International_Mobile_Equipment_Identity: usable=9 unusable=0
+https://en.wikipedia.org/wiki/International_mobile_subscriber_identity: usable=3 unusable=0
+https://en.wikipedia.org/wiki/Internet_in_India: usable=13 unusable=0
+https://en.wikipedia.org/wiki/Internet_service_provider: usable=11 unusable=0
+https://en.wikipedia.org/wiki/Know_your_customer: usable=15 unusable=0
+https://en.wikipedia.org/wiki/LTE_%28telecommunication%29: usable=21 unusable=1
+https://en.wikipedia.org/wiki/List_of_marketing_opt-out_registries: usable=1 unusable=0
+https://en.wikipedia.org/wiki/Mobile_broadband: usable=4 unusable=1
+https://en.wikipedia.org/wiki/Mobile_network_operator: usable=1 unusable=0
+https://en.wikipedia.org/wiki/Mobile_number_portability: usable=3 unusable=0
+https://en.wikipedia.org/wiki/Mobile_phone: usable=21 unusable=1
+https://en.wikipedia.org/wiki/Mobile_virtual_network_operator: usable=9 unusable=0
+https://en.wikipedia.org/wiki/Postpaid_mobile_phone: usable=1 unusable=0
+https://en.wikipedia.org/wiki/Prepaid_mobile_phone: usable=10 unusable=0
+https://en.wikipedia.org/wiki/Radio_spectrum: usable=5 unusable=0
+https://en.wikipedia.org/wiki/Roaming: usable=13 unusable=0
+https://en.wikipedia.org/wiki/SMS: usable=16 unusable=0
+https://en.wikipedia.org/wiki/Spectrum_auction: usable=14 unusable=1
+https://en.wikipedia.org/wiki/Subscriber_identity_module: usable=19 unusable=0
+https://en.wikipedia.org/wiki/Telecom_Regulatory_Authority_of_India: usable=3 unusable=0
+https://en.wikipedia.org/wiki/Telecommunications: usable=23 unusable=0
+https://en.wikipedia.org/wiki/Telecommunications_in_India: usable=18 unusable=1
+https://en.wikipedia.org/wiki/Telemarketing: usable=12 unusable=0
+https://en.wikipedia.org/wiki/Telephone_numbering_plan: usable=12 unusable=0
+https://en.wikipedia.org/wiki/Wireless_Internet_service_provider: usable=3 unusable=1
+manual/airtel_telecom_consumers_charter.pdf: usable=55 unusable=6
+manual/dot_alternate_digital_kyc_2026.pdf: usable=5 unusable=0
+manual/dot_kyc_paper_based_2025.pdf: usable=1 unusable=0
+manual/jio_telecom_consumer_chart.pdf: usable=55 unusable=13
+manual/pib_qos_2024.html: usable=6 unusable=0
+manual/pib_tcccpr_amendments_2025.html: usable=10 unusable=0
+manual/pib_tcccpr_spam_2025.html: usable=3 unusable=0
+manual/telecommunications_act_2023.pdf: usable=50 unusable=2
+manual/trai_complaint_redressal_2012.pdf: usable=23 unusable=0
+manual/trai_consumer_handbook_2018_english.pdf: usable=49 unusable=19
+manual/trai_ekyc_recommendations_2017.pdf: usable=4 unusable=0
+manual/trai_mnp_2009_consolidated_2024.pdf: usable=43 unusable=5
+manual/trai_mnp_9th_amendment_2024.pdf: usable=10 unusable=1
+manual/trai_qos_2024.pdf: usable=116 unusable=76
+manual/trai_tcccpr_2018_consolidated_2026.pdf: usable=89 unusable=4
+manual/trai_tcccpr_2nd_amendment_2025.pdf: usable=101 unusable=0
+manual/trai_tcpr_12th_amendment_2024.pdf: usable=12 unusable=0
+manual/trai_tcpr_2012_consolidated_2025.pdf: usable=30 unusable=6
+
+Rejected type: address_or_contact_list (25 chunks)
+- Airtel Telecom Consumers Charter [396500e1adc4bff5]: 'Annexure-I(A) - Contact Centre Numbers for Mobile Services\nCircle Postpaid Contact\nCenters\nPrepaid Contact\nCenters Office Address\nRegistered Office\n(New Delhi) - - Bharti Cresent, 1, Nelson Mandella Road,\nVasant Kunj, Phase II, New Delhi -110070\nAndhra Pradesh 9849012345 98490984'
+- Airtel Telecom Consumers Charter [ad8b8507d0366098]: 'Annexure-I(B) - Contact Centre Numbers for Fixed Line Services\n\nCircle Contact Centers\nFor Request &\nqueries from Airtel\nLandline\nFor Complaints from\nAirtel Landline\nAndhra Pradesh 040-44444121 121 198\n\nTamilNadu\n(incl. Chennai) 044-44444121 121 198\nDelhi 011-4444121 121 198\n\nGuj'
+- Airtel Telecom Consumers Charter [998b1c4910bc4909]: 'Annexure II(A) � Appellate Authority for Mobile Services\nService\nAreas\ncovered by\nComplaint\nCentre (s)\nGeneral\nInformatio\nn Number\nToll free\nConsumer Care\nNumber(s) at\nComplaint\nCentre (s)\nTelephone\nNo.\nName, Address, Email and T. No. of\nAppellate Authority\nAndhra\nPradesh 121 198'
+- Airtel Telecom Consumers Charter [8d3bd33db5bf00c0]: 'Annexure II(B) � Appellate Authority for Fixed Line & Broadband Services\nService Areas covered\nby Complaint centre\n(s)\nGeneral\nInformation\nNumber\nToll free\nConsumer\nCare\nNumber(s) at\nComplaint\nCentre (s)\nName, Address, Email and T. No. of\nAppellate Authority\nAndhra Pradesh 121 19'
+- Jio Telecom Consumer Chart [0b913ded037f6395]: 'To register complaint at contact center, customer can reach us by:\n� call us on consumer care number 198 (toll free) or general information number 199 (toll\nfree) from your Jio number.\n� call us on 1800-88-99999(for Jio Mobile),1800-896-9999(for Jio Fiber) from any number.\n� writ'
+
+Rejected type: mostly_numbers_or_tables (36 chunks)
+- Telecommunications in India [75ce15e21132c46d]: 'a sold their spectrum under spectrum trading agreements to Airtel and RCOM respectively in Q4 2016.\nOn 23 February 2017, Telenor India announced that Bharti Airtel will take over all its business and assets in India and deal will be completed in 12 months timeframe. On 14 May 201'
+- Mobile phone [dd05414227e263ed]: ' UMTS (3G). In addition to transmitting voice over digital signals, the 2G network introduced data services for mobile, starting with SMS text messages, then expanding to Multimedia Messaging Service (MMS), and mobile internet with a theoretical maximum transfer speed of 384 kbit'
+- Mobile broadband [8c440d13013f2026]: " limitations including distance to the cell tower. In addition, there are issues with connectivity, network capacity, application quality, and mobile network operators' overall inexperience with data traffic. Peak speeds experienced\nby users are also often limited by the capabili"
+- 5G [e5854560a828a85c]: ' conducted early trials. Samsung tested a prototype achieving more than 1 Gbit/s across 2 km using 8 � 8 MIMO antennas. NTT Docomo received a government award at CEATEC for high-speed network development, while Huawei announced a US$600 million program to advance mobile network t'
+- 5G [c8b3f90363cbd92d]: ' by Verizon and AT&T was briefly delayed due to FAA safety concerns. The highest 5G speed measured in a deployed network is 5.9 Gbit/s (2023). Low-band frequencies such as n5 cover larger areas per cell but deliver lower data rates of around 5�250 Mbit/s.\n\n=== Latency ===\nTypical'
+
+Rejected type: qos_stakeholder_discussion (67 chunks)
+- Trai Qos 2024 [644167be1066ab26]: '3.5 An Open House Discussion (OHD) was held with the stakeholders, through virtual mode, on 9 th April 2024. The\nAuthority received additional comments after OHD from six stakeholders (Service providers - 03, Industry\nAssociation- 01 and CAG- 02)\n3.6 Input received from stakehold'
+- Trai Qos 2024 [752f266044786c6b]: ' have parameter centric QoS and to not change\nQoS merely because a new generation of mobile service or technology is being implemented . Minor\ntweaks in nomenclature and parameters, as done for 4G, alone are sufficient to address such changes\ninstead of a humongous review exercis'
+- Trai Qos 2024 [22673aa08d56c1ff]: ' delivered to them and supported the Consultation paper on review of Quality -of-Service\nStandards.\n(b) Analysis and Conclusion\n(i) Chapter 2 of the Consultation Paper is dedicated to the need for revision of existing QoS Standards. The\npresent regulations are more than 10 years '
+- Trai Qos 2024 [3d10034164655978]: 'In view of the aforesaid, the Authority is of the view that a comprehensive review of existing QoS standards is\nessential at this stage.\n4.2 Provide a Clear Glide-path towards De-regulation\n(a) Input of Stakeholders\n(i) Multiple stakeholders submitted that TRAI should consider an'
+- Trai Qos 2024 [65440081f4e94249]: ' transition to the benchmarks which have been either strengthened or\nintroduced as a fresh benchmark. The effective date for the regulations is 1.10.2024 with quarterly\nreporting similar to the existing processes. This will enable service providers to switch to new\nRegulations wi'
+
+Rejected type: table_of_contents_or_index (3 chunks)
+- Airtel Telecom Consumers Charter [81a662eec262f0a1]: 'Contents\nS.No. Particulars\n\nPage No.\n\n01 Preamble 3\n\n02 Name and Address 3\n\n03 Services Offered 3\n\n04 Details of Geographic areas where services are available 3\n\n05 Terms & Conditions of Service offered by Airtel 4-22\n\nPrepaid Mobile Services 4-12\n\nPostpaid Mobile and Fixed Line '
+- Jio Telecom Consumer Chart [019d27ecbdd5f40e]: 'Table of Contents\n\nS.No. Particulars Page No.\n1 Tariffs 3\n2 Mobile Number Portability 3\n3 Value Added Services (VAS) 4\n4 Telecom Commercial Communication Customer Preference\nRegulations\n4\n5 Jio Care 5\n6 Complaint Redressal Mechanism-Contact Center & Appellate Authority 6\n7 Web-Ba'
+- Trai Consumer Handbook 2018 English [10fee6c43fc11a10]: 'Table of Contents\nIntroduction\nChapter-1 Enrolment as a consumer of Telecommunication Services\n1 Taking a Mobile Connection 1\n2 Start-up Kit 1\n3 Vouchers (for pre-paid mobile customers) 2\n4 Information to Pre-Paid subscribers on activation of a Voucher 3\n5 Information to Pre-Paid'
+
+Rejected type: under_40_words (18 chunks)
+- 5G [f4cd8c755439f3ba]: '-science review of the research into low-level RF fields above 6 GHz". Journal of Exposure Science & Environmental Epidemiology. 31 (4): 585�605. doi:10.1038/s41370-021-00297-6. PMC 8263336. PMID 33727687.\n\n== External links ==\nMedia related to 5G at Wikimedia Commons\n5G multi-an'
+- Wireless Internet service provider [41000b34dc02d384]: ' service provider (NISP)\nSatellite Internet access\nWireless community network\nWireless local loop\n\n=== Specific entities ===\nAirspan Networks\nConnectKentucky\nGeekcorps\nMicrowave Bypass\nMotorola Canopy\nRadwin\nStarry Internet\nTelrad Networks\n\n== References ==\n\n== External links ==\n'
+- Airtel Telecom Consumers Charter [e27b51667c744550]: 'Telecom Consumers Charter\n(Mobile and Fixed Line Services)'
+- Jio Telecom Consumer Chart [2ec1c359226632cc]: 'Telecom Consumer Charter'
+- Jio Telecom Consumer Chart [b0fb1153cd5cc81a]: " or DRB (Data\nRadio Bearer for SA) Congestion\n? 2%\n(iv) Connections with good voice quality ? 95%\n(v) Jitter (in 4G and 5G network) ? 50 msec\n(vi) Messaging: Successful SMS delivery within service\nprovider's network ? 95%\n\nWireline Services"
+

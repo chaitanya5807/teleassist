@@ -1,6 +1,7 @@
 seed: 42
 include_drafts: false
 max_doc_share_for_sampling: 0.15
+question_generator_backend: local_hf
 document_families:
   TCCCPR: [tcccpr]
   MNP: [mnp]
@@ -32,5 +33,6 @@ models:
   embedding: BAAI/bge-small-en-v1.5
   reranker: cross-encoder/ms-marco-MiniLM-L-6-v2
   generator: Qwen/Qwen2.5-1.5B-Instruct
+  question_generator: Qwen/Qwen2.5-7B-Instruct
   max_new_tokens: 256
   load_in_4bit: true

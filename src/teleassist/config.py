@@ -54,6 +54,7 @@ class ModelConfig(BaseModel):
     embedding: str = "BAAI/bge-small-en-v1.5"
     reranker: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     generator: str = "Qwen/Qwen2.5-1.5B-Instruct"
+    question_generator: str = "Qwen/Qwen2.5-7B-Instruct"
     max_new_tokens: int = Field(default=256, gt=0)
     load_in_4bit: bool = True
 
@@ -64,6 +65,7 @@ class AppConfig(BaseModel):
     seed: int = 42
     include_drafts: bool = False
     max_doc_share_for_sampling: float = Field(default=0.15, gt=0, le=1)
+    question_generator_backend: str = "local_hf"
     document_families: dict[str, list[str]] = Field(
         default_factory=lambda: {
             family: markers.copy() for family, markers in DEFAULT_DOCUMENT_FAMILIES.items()

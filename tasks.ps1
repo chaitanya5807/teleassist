@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("setup", "data", "build-index", "search", "ask", "retrieval-eval", "sft-data", "train", "eval", "report", "serve", "test", "lint", "docker-build")]
+    [ValidateSet("setup", "data", "build-index", "search", "ask", "retrieval-eval", "build-eval", "sft-data", "train", "eval", "report", "serve", "test", "lint", "docker-build")]
     [string]$Task = "",
     [Parameter(Position = 1)]
     [string]$Query = "",
@@ -8,7 +8,12 @@ param(
     [string]$Mode = "hybrid_rerank",
     [string]$EvalSetPath = "",
     [switch]$NoRetrieval,
-    [string]$Config = "configs/default.yaml"
+    [string]$Config = "configs/default.yaml",
+    [ValidateSet("openai", "local_hf", "mock")]
+    [string]$Backend = "",
+    [switch]$SampleOnly,
+    [int]$SampleCount = 10,
+    [int]$TargetCount = 2000
 )
 
 Set-StrictMode -Version Latest
@@ -75,7 +80,30 @@ function Invoke-Task {
                 --index (Join-Path $PSScriptRoot "data\processed\dense_index.npz") `
                 --config (Join-Path $PSScriptRoot "configs\default.yaml")
         }
-        "sft-data" { Write-Host "not implemented until Phase 5" }
+        "build-eval" {
+            $BuilderArgs = @(
+                "-m", "teleassist.evaluation.build_eval_set",
+                "--config", (Join-Path $PSScriptRoot $Config),
+                "--chunks", (Join-Path $PSScriptRoot "data\processed\chunks.jsonl"),
+                "--split", (Join-Path $PSScriptRoot "data\processed\split.json")
+            )
+            if ($Backend) { $BuilderArgs += @("--backend", $Backend) }
+            if ($SampleOnly) { $BuilderArgs += @("--sample-only", "--sample-count", "$SampleCount") }
+            if (-not $SampleOnly) { $BuilderArgs += @("--target-count", "100") }
+            & $Python @BuilderArgs
+        }
+        "sft-data" {
+            $BuilderArgs = @(
+                "-m", "teleassist.training.build_sft_data",
+                "--config", (Join-Path $PSScriptRoot $Config),
+                "--chunks", (Join-Path $PSScriptRoot "data\processed\chunks.jsonl"),
+                "--split", (Join-Path $PSScriptRoot "data\processed\split.json"),
+                "--target-count", "$TargetCount"
+            )
+            if ($Backend) { $BuilderArgs += @("--backend", $Backend) }
+            if ($SampleOnly) { $BuilderArgs += @("--sample-only", "--sample-count", "$SampleCount") }
+            & $Python @BuilderArgs
+        }
         "train" { Write-Host "not implemented until Phase 6" }
         "eval" { Write-Host "not implemented until Phase 7" }
         "report" { Write-Host "not implemented until Phase 7" }
@@ -88,6 +116,7 @@ function Invoke-Task {
 if ($Task) {
     Invoke-Task -Name $Task
 } else {
-    Write-Host "Usage: .\tasks.ps1 <setup|data|build-index|search|retrieval-eval|sft-data|train|eval|report|serve|test|lint|docker-build>"
+    Write-Host "Usage: .\tasks.ps1 <setup|data|build-index|search|ask|retrieval-eval|build-eval|sft-data|train|eval|report|serve|test|lint|docker-build>"
     exit 1
 }
+
