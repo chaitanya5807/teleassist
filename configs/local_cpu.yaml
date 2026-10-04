@@ -1,0 +1,4 @@
+models:
+  generator: Qwen/Qwen2.5-0.5B-Instruct
+  max_new_tokens: 192
+  load_in_4bit: false

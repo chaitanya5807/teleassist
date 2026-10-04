@@ -1,12 +1,14 @@
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("setup", "data", "build-index", "search", "retrieval-eval", "sft-data", "train", "eval", "report", "serve", "test", "lint", "docker-build")]
+    [ValidateSet("setup", "data", "build-index", "search", "ask", "retrieval-eval", "sft-data", "train", "eval", "report", "serve", "test", "lint", "docker-build")]
     [string]$Task = "",
     [Parameter(Position = 1)]
     [string]$Query = "",
     [ValidateSet("bm25", "dense", "hybrid", "hybrid_rerank")]
     [string]$Mode = "hybrid_rerank",
-    [string]$EvalSetPath = ""
+    [string]$EvalSetPath = "",
+    [switch]$NoRetrieval,
+    [string]$Config = "configs/default.yaml"
 )
 
 Set-StrictMode -Version Latest
@@ -55,6 +57,14 @@ function Invoke-Task {
                 --chunks (Join-Path $PSScriptRoot "data\processed\chunks.jsonl") `
                 --index (Join-Path $PSScriptRoot "data\processed\dense_index.npz") `
                 --config (Join-Path $PSScriptRoot "configs\default.yaml")
+        }
+        "ask" {
+            if (-not $Query) { throw 'Usage: .\tasks.ps1 ask "question" -Mode hybrid_rerank [-NoRetrieval] [-Config configs/local_cpu.yaml]' }
+            $AskMode = if ($NoRetrieval) { "no_retrieval" } else { $Mode }
+            & $Python -m teleassist.generation.rag --query $Query --mode $AskMode `
+                --chunks (Join-Path $PSScriptRoot "data\processed\chunks.jsonl") `
+                --index (Join-Path $PSScriptRoot "data\processed\dense_index.npz") `
+                --config (Join-Path $PSScriptRoot $Config)
         }
         "retrieval-eval" {
             if (-not $EvalSetPath) {

@@ -32,3 +32,5 @@ models:
   embedding: BAAI/bge-small-en-v1.5
   reranker: cross-encoder/ms-marco-MiniLM-L-6-v2
   generator: Qwen/Qwen2.5-1.5B-Instruct
+  max_new_tokens: 256
+  load_in_4bit: true

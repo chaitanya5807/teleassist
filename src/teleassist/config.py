@@ -54,6 +54,8 @@ class ModelConfig(BaseModel):
     embedding: str = "BAAI/bge-small-en-v1.5"
     reranker: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     generator: str = "Qwen/Qwen2.5-1.5B-Instruct"
+    max_new_tokens: int = Field(default=256, gt=0)
+    load_in_4bit: bool = True
 
 
 class AppConfig(BaseModel):
