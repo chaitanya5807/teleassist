@@ -17,7 +17,8 @@ import tiktoken
 from pypdf.errors import PdfReadError
 
 from teleassist.config import load_config
-from teleassist.ingestion.parse import parse_document
+from teleassist.ingestion.parse import filter_english_units, parse_document
+from teleassist.ingestion.splitting import split_corpus_documents, write_document_split
 
 LOGGER = logging.getLogger(__name__)
 try:
@@ -40,7 +41,7 @@ def _decode(tokens: list[int] | list[str]) -> str:
         return "".join(tokens)
     if _ENCODING is None:
         return ""
-    return _ENCODING.decode(tokens)
+    return _ENCODING.decode(tokens, errors="ignore")
 
 
 def _recursive_split(text: str, limit: int) -> list[str]:
@@ -152,7 +153,7 @@ def build_chunks(
         ):
             continue
         try:
-            parsed = parse_document(path)
+            parsed = filter_english_units(parse_document(path), document_name=str(path))
             documents.extend(
                 unit
                 for unit in parsed
@@ -172,7 +173,10 @@ def build_chunks(
                     continue
                 source = f"manual/{path.relative_to(manual_root).as_posix()}"
                 try:
-                    parsed = parse_document(path, source=source, source_type="manual")
+                    parsed = filter_english_units(
+                        parse_document(path, source=source, source_type="manual"),
+                        document_name=source,
+                    )
                     documents.extend(
                         unit
                         for unit in parsed
@@ -239,6 +243,7 @@ def main() -> None:
     parser.add_argument("--manifest", type=Path, default=Path("data/raw/MANIFEST.json"))
     parser.add_argument("--chunk-size", type=int)
     parser.add_argument("--overlap", type=int)
+    parser.add_argument("--split-output", type=Path, default=Path("data/processed/split.json"))
     args = parser.parse_args()
     config = load_config(args.config)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -249,6 +254,14 @@ def main() -> None:
         overlap=config.chunking.overlap if args.overlap is None else args.overlap,
         manual_dir=args.manual_dir,
         include_drafts=config.include_drafts,
+    )
+    document_split = split_corpus_documents(chunks, seed=config.seed)
+    write_document_split(args.split_output, document_split)
+    LOGGER.info(
+        "Wrote stratified document split: %d train, %d eval to %s",
+        len(document_split["train_documents"]),
+        len(document_split["eval_documents"]),
+        args.split_output,
     )
     print(format_source_table(args.manifest, chunks))
 

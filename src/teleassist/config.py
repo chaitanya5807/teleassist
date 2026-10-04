@@ -48,6 +48,7 @@ class AppConfig(BaseModel):
 
     seed: int = 42
     include_drafts: bool = False
+    max_doc_share_for_sampling: float = Field(default=0.15, gt=0, le=1)
     paths: PathConfig = Field(default_factory=PathConfig)
     chunking: ChunkingConfig = Field(default_factory=ChunkingConfig)
     retrieval: RetrievalConfig = Field(default_factory=RetrievalConfig)

@@ -1,5 +1,6 @@
 seed: 42
 include_drafts: false
+max_doc_share_for_sampling: 0.15
 paths:
   raw_data: data/raw
   processed_data: data/processed

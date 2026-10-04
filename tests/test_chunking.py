@@ -12,7 +12,12 @@ from teleassist.ingestion.download import (
     WIKIPEDIA_TITLES,
     download_sources,
 )
-from teleassist.ingestion.parse import infer_document_metadata
+from teleassist.ingestion.parse import (
+    english_filter_reason,
+    filter_english_units,
+    infer_document_metadata,
+)
+from teleassist.ingestion.splitting import split_corpus_documents
 
 
 def _unit(text: str) -> dict:
@@ -37,6 +42,16 @@ def test_every_chunk_respects_size_limit() -> None:
     chunks = chunk_document([_unit(text)], chunk_size=32, overlap=8)
     assert chunks
     assert all(len(_tokens(chunk["text"])) <= 32 for chunk in chunks)
+
+
+def test_chunk_boundaries_do_not_create_unicode_replacement_characters() -> None:
+    chunks = chunk_document(
+        [_unit("Legal text includes mathematical symbols 𝐍𝐮𝐦𝐛𝐞𝐫 and currency ₹. " * 5)],
+        chunk_size=8,
+        overlap=2,
+    )
+    assert chunks
+    assert all("\ufffd" not in chunk["text"] for chunk in chunks)
 
 
 def test_chunk_ids_are_stable_for_identical_input() -> None:
@@ -144,6 +159,74 @@ def test_manual_doc_type_inference_rules() -> None:
 def test_wikipedia_fallback_is_trimmed_but_keeps_at_least_40_titles() -> None:
     assert len(WIKIPEDIA_TITLES) >= 40
     assert DROPPED_WIKIPEDIA_TITLES.isdisjoint(WIKIPEDIA_TITLES)
+
+
+def test_english_filter_rejects_hindi_garbled_and_keeps_english() -> None:
+    hindi = "यह दूरसंचार सेवा ग्राहक के लिए उपलब्ध है।"
+    garbled = "The customer must submit the form � before service activation."
+    english = "The customer can contact the service provider to update a mobile account."
+    gibberish = "zxqv rblp thmkw pqrn vxxz"
+
+    assert english_filter_reason(hindi) == "more than 15% Devanagari letters"
+    assert english_filter_reason(garbled) == "replacement character"
+    assert english_filter_reason(english) is None
+    assert english_filter_reason(gibberish) == "low recognizable-English word share"
+
+
+def test_english_filter_drops_blocks_and_logs_document_totals(caplog) -> None:
+    caplog.set_level("INFO")
+    units = [
+        _unit("The customer can contact the service provider for help."),
+        _unit("यह दूरसंचार सेवा ग्राहक के लिए उपलब्ध है।"),
+        _unit("The customer must submit this form � before activation."),
+    ]
+    kept = filter_english_units(units, document_name="mixed.pdf")
+
+    assert [unit["text"] for unit in kept] == [units[0]["text"]]
+    assert "English filter dropped 2 pages/blocks" in caplog.text
+    assert "from mixed.pdf" in caplog.text
+
+
+def test_english_filter_removes_small_devanagari_header_from_english_page() -> None:
+    text = (
+        "The regulation explains the service quality requirements and reporting process. "
+        "Providers must submit their information within the stated period.\n"
+        "भारत का राजपत्र : असाधारण\n"
+        "The authority will publish the results for consumers and service providers."
+    )
+    kept = filter_english_units([_unit(text)], document_name="bilingual-page.pdf")
+
+    assert len(kept) == 1
+    assert "भारत" not in kept[0]["text"]
+    assert "The regulation explains" in kept[0]["text"]
+
+
+def test_document_split_is_stratified_and_large_document_is_not_only_eval() -> None:
+    chunks = []
+    for source, doc_type, count in (
+        ("manual/large.pdf", "final_regulation", 80),
+        ("manual/small.pdf", "final_regulation", 1),
+        ("manual/guide.pdf", "faq_or_guide", 4),
+        ("wikipedia/SIM card", "encyclopedia", 4),
+    ):
+        chunks.extend(
+            {
+                "metadata": {
+                    "source": source,
+                    "source_type": "manual" if source.startswith("manual/") else "wikipedia",
+                    "doc_type": doc_type,
+                    "doc_title": source,
+                    "year": None,
+                }
+            }
+            for _ in range(count)
+        )
+
+    split = split_corpus_documents(chunks, seed=42)
+    eval_types = {document["doc_type"] for document in split["eval_documents"]}
+    assert eval_types == {"final_regulation", "faq_or_guide", "encyclopedia"}
+    if any(document["source"] == "manual/large.pdf" for document in split["eval_documents"]):
+        assert len(split["eval_documents"]) > 1
 
 
 def test_drafts_are_excluded_by_default(tmp_path) -> None:

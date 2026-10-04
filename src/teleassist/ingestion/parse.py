@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,49 @@ from pypdf import PdfReader
 
 LOGGER = logging.getLogger(__name__)
 YEAR_PATTERN = re.compile(r"(?<!\d)(?:19|20)\d{2}(?!\d)")
+ENGLISH_WORD_PATTERN = re.compile(r"[A-Za-z]+(?:['’][A-Za-z]+)?")
+MIN_ENGLISH_WORD_SHARE = 0.05
+RECOGNIZABLE_ENGLISH_WORDS = frozenset(
+    """
+    a able about above according account across act action activity actually add additional address
+    after again against all also always am an and another any are as ask at available back be
+    because
+    become been before being below between both but by call can care case cause change charge check
+    choice choose claim clear clearly code come common communication company complaint complete
+    condition connect connection consent consumer contact continue contract control copy correct
+    could country customer data date day days decision delay department describe details determine
+    different
+    do does document during each early either email end enough enter error even ever every example
+    except exchange explain fail failure family fee field file final find first following for form
+    from full further get give good government group had has have he help her here high him his home
+    how if important in include including increase individual information initial input install
+    instead into is issue it its itself job join just keep kind know known language last later law
+    learn legal less
+    liable like limit list local long made make many may me mean means measure member message might
+    mobile more most must my name national necessary need network never new next no not note notice
+    number of off offer office often on once one only open operate operator option or other our out
+    over own page paper part particular party pass pay payment per period person personal phone
+    place
+    point policy possible power present press previous price provide provider public purpose quality
+    question rate reach read receive record redressal regulation regulatory relevant remain remove
+    request require requirement response result return right rule same say section see service set
+    shall she should show similar since so source specific standard state statement status still
+    subject such support system take tell term than that the their them then there these they thing
+    this those through time to together too total transfer try type under understand until up update
+    upon use used user using valid value verify very via view was way we well were what when where
+    which while who why will with
+    within without work would write year years you your
+    act amendment authority annexure address broadband building call centre carrier cellular
+    charter citizen city clause code contact centers circle east floor house limited mobile numbers
+    north office park phase postpaid prepaid registered road south street tower west
+    consultation consumer protection court customer care department digital dispute do not disturb
+    eligibility equipment fair fee filing handset identity instruction internet invoice kyc licence
+    license line mobile number portability provider quality of service recharge regulation roaming
+    service provider sim spam spectrum subscriber tariff telecom telecommunication telephone terms
+    trai tribunal validity verification voice wireless
+    """.split()
+)
+DEVANAGARI_LETTER_PATTERN = re.compile(r"[\u0900-\u097F\uA8E0-\uA8FF]")
 
 
 def infer_document_metadata(
@@ -84,6 +128,69 @@ def clean_text(text: str) -> str:
     text = re.sub(r"[ \t\f\v]+", " ", text)
     text = re.sub(r" *\n *", "\n", text)
     return re.sub(r"\n{3,}", "\n\n", text).strip()
+
+
+def english_filter_reason(text: str) -> str | None:
+    """Return why a text block is excluded from this English-only corpus, if any."""
+    if "\ufffd" in text:
+        return "replacement character"
+    letters = [character for character in text if unicodedata.category(character).startswith("L")]
+    devanagari = sum(bool(DEVANAGARI_LETTER_PATTERN.fullmatch(character)) for character in letters)
+    if letters and devanagari / len(letters) > 0.15:
+        return "more than 15% Devanagari letters"
+    words = ENGLISH_WORD_PATTERN.findall(text.lower())
+    recognizable = sum(word in RECOGNIZABLE_ENGLISH_WORDS for word in words)
+    if not words or recognizable / len(words) < MIN_ENGLISH_WORD_SHARE:
+        return "low recognizable-English word share"
+    return None
+
+
+def filter_english_units(
+    units: list[dict[str, Any]], *, document_name: str
+) -> list[dict[str, Any]]:
+    """Drop non-English or corrupted page/text units and log per-document losses."""
+    kept: list[dict[str, Any]] = []
+    dropped_pages = 0
+    dropped_characters = 0
+    stripped_blocks = 0
+    stripped_characters = 0
+    reasons: dict[str, int] = {}
+    for unit in units:
+        text = str(unit.get("text", ""))
+        reason = english_filter_reason(text)
+        if reason is None:
+            lines = text.splitlines(keepends=True)
+            english_lines = [line for line in lines if not DEVANAGARI_LETTER_PATTERN.search(line)]
+            cleaned_text = "".join(english_lines).strip()
+            removed_characters = len(text) - len("".join(english_lines))
+            if cleaned_text and english_filter_reason(cleaned_text) is None:
+                if removed_characters:
+                    stripped_blocks += 1
+                    stripped_characters += removed_characters
+                    unit = {**unit, "text": cleaned_text}
+                kept.append(unit)
+            else:
+                dropped_pages += 1
+                dropped_characters += len(text)
+                reasons["low recognizable-English word share after script cleanup"] = (
+                    reasons.get("low recognizable-English word share after script cleanup", 0) + 1
+                )
+        else:
+            dropped_pages += 1
+            dropped_characters += len(text)
+            reasons[reason] = reasons.get(reason, 0) + 1
+    if dropped_pages or stripped_blocks:
+        LOGGER.info(
+            "English filter dropped %d pages/blocks (%d characters) and stripped %d "
+            "Devanagari line characters across %d blocks from %s: %s",
+            dropped_pages,
+            dropped_characters,
+            stripped_characters,
+            stripped_blocks,
+            document_name,
+            ", ".join(f"{reason}={count}" for reason, count in sorted(reasons.items())),
+        )
+    return kept
 
 
 def _markdown_sections(text: str, source: str, source_type: str) -> list[dict[str, Any]]:
