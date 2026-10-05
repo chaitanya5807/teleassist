@@ -1,4 +1,4 @@
-"""Supervised LoRA fine-tuning with assistant-completion-only loss."""
+"""Supervised LoRA fine-tuning (TRL 0.13) with answer-only loss."""
 
 from __future__ import annotations
 
@@ -13,9 +13,36 @@ import yaml
 from teleassist.generation.prompts import build_messages
 from teleassist.generation.question_generator import create_generator
 
+DEFAULT_RESPONSE_TEMPLATE = "<|im_start|>assistant\n"
+
 
 def _read(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+
+
+def _filter_by_length(
+    rows: list[dict[str, str]], tokenizer: Any, max_len: int, name: str
+) -> list[dict[str, str]]:
+    """Drop examples longer than max_len so the answer is never truncated away."""
+    kept = [
+        r for r in rows if len(tokenizer(r["text"], add_special_tokens=False)["input_ids"]) <= max_len
+    ]
+    print(f"[{name}] kept {len(kept)} of {len(rows)} (dropped {len(rows) - len(kept)} over {max_len} tokens)")
+    if not kept:
+        raise ValueError(f"No {name} examples fit in max_seq_length={max_len}")
+    return kept
+
+
+def _check_masking(collator: Any, tokenizer: Any, texts: list[str]) -> None:
+    """Fail early if the loss mask leaves no answer tokens to learn from."""
+    for i, text in enumerate(texts[:8]):
+        ids = tokenizer(text, add_special_tokens=False)["input_ids"]
+        labels = collator([{"input_ids": ids}])["labels"][0].tolist()
+        trained = [t for t in labels if t != -100]
+        if not trained:
+            raise ValueError(f"Example {i}: response template not found, every label is masked")
+        if i == 0:
+            print("Loss is computed ONLY on this text:\n" + tokenizer.decode(trained) + "\n")
 
 
 def main() -> None:
@@ -24,15 +51,17 @@ def main() -> None:
     parser.add_argument("--data-dir", type=Path, default=Path("data/train"))
     parser.add_argument("--checkpoint-dir", type=Path, default=Path("models/checkpoints"))
     parser.add_argument("--output-dir", type=Path, default=Path("models/teleassist-lora"))
+    parser.add_argument("--results-dir", type=Path, default=Path("results"))
     parser.add_argument("--resume-from-checkpoint", type=str, default=None)
     parser.add_argument("--smoke", action="store_true")
     args = parser.parse_args()
     cfg = yaml.safe_load(args.config.read_text(encoding="utf-8"))
+
     import torch
     from datasets import Dataset
     from peft import LoraConfig
     from transformers import AutoModelForCausalLM, AutoTokenizer, TrainerCallback
-    from trl import SFTConfig, SFTTrainer
+    from trl import DataCollatorForCompletionOnlyLM, SFTConfig, SFTTrainer
 
     model_name = (
         cfg.get("smoke_model_name")
@@ -46,7 +75,7 @@ def main() -> None:
             "and mobile network services."
         )
         sample = mock.generate(text, 1)[0]
-        context = [{"id": f"mock-{i}", "text": text} for i in range(32)]
+        context = [{"id": f"mock-{i}", "text": text} for i in range(3)]
         train_rows = [
             dict(sample, question=f"{sample['question']} Example {i}", context=context)
             for i in range(24)
@@ -60,12 +89,24 @@ def main() -> None:
         val_rows = _read(args.data_dir / "val.jsonl")
     if not train_rows or not val_rows:
         raise ValueError("Training requires non-empty train.jsonl and val.jsonl")
+
     tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=args.smoke)
+    max_len = int(cfg.get("max_seq_length", 2048))
 
     def format_row(row: dict[str, Any]) -> dict[str, str]:
         messages = build_messages(row["question"], row.get("context", []))
         prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        return {"prompt": prompt, "completion": row["answer"] + tokenizer.eos_token}
+        return {"text": prompt + row["answer"] + tokenizer.eos_token}
+
+    train_text = _filter_by_length([format_row(r) for r in train_rows], tokenizer, max_len, "train")
+    val_text = _filter_by_length([format_row(r) for r in val_rows], tokenizer, max_len, "val")
+
+    template = cfg.get("response_template", DEFAULT_RESPONSE_TEMPLATE)
+    collator = DataCollatorForCompletionOnlyLM(
+        response_template=tokenizer.encode(template, add_special_tokens=False),
+        tokenizer=tokenizer,
+    )
+    _check_masking(collator, tokenizer, [r["text"] for r in train_text])
 
     quant = None
     if torch.cuda.is_available() and cfg.get("quantization") == "nf4":
@@ -88,7 +129,6 @@ def main() -> None:
         else (torch.float16 if torch.cuda.is_available() else torch.float32),
     )
     model.config.use_cache = False
-    model.gradient_checkpointing_enable()
     peft = LoraConfig(
         r=cfg["rank"],
         lora_alpha=cfg["alpha"],
@@ -97,6 +137,8 @@ def main() -> None:
         task_type="CAUSAL_LM",
     )
     args.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    args.results_dir.mkdir(parents=True, exist_ok=True)
+    eval_every = 10 if args.smoke else int(cfg.get("eval_steps", 50))
     training_args = SFTConfig(
         output_dir=str(args.checkpoint_dir),
         learning_rate=float(cfg["learning_rate"]),
@@ -107,12 +149,17 @@ def main() -> None:
         gradient_accumulation_steps=1
         if args.smoke
         else int(cfg.get("gradient_accumulation_steps", 8)),
-        max_seq_length=int(cfg.get("max_seq_length", 2048)),
+        max_seq_length=max_len,
         dataset_text_field="text",
-        completion_only_loss=True,
+        dataset_kwargs={"add_special_tokens": False},
+        packing=False,
         gradient_checkpointing=True,
-        eval_strategy="epoch",
-        save_strategy="epoch",
+        gradient_checkpointing_kwargs={"use_reentrant": False},
+        eval_strategy="steps",
+        eval_steps=eval_every,
+        save_strategy="no" if args.smoke else "steps",
+        save_steps=eval_every,
+        save_total_limit=2,
         logging_steps=1 if args.smoke else 10,
         max_steps=20 if args.smoke else -1,
         bf16=torch.cuda.is_available() and torch.cuda.is_bf16_supported(),
@@ -121,13 +168,17 @@ def main() -> None:
         seed=42,
     )
 
+    log_path = args.results_dir / "train_log.csv"
+    if args.resume_from_checkpoint is None and log_path.exists():
+        log_path.unlink()
+
     class LossCSV(TrainerCallback):
         def __init__(self) -> None:
-            self.path = Path("results/train_log.csv")
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            self.file = self.path.open("w", newline="", encoding="utf-8")
+            is_new = not log_path.exists() or log_path.stat().st_size == 0
+            self.file = log_path.open("a", newline="", encoding="utf-8")
             self.writer = csv.DictWriter(self.file, fieldnames=["step", "train_loss", "val_loss"])
-            self.writer.writeheader()
+            if is_new:
+                self.writer.writeheader()
 
         def on_log(
             self,
@@ -138,6 +189,8 @@ def main() -> None:
             **kwargs: Any,
         ) -> Any:
             logs = logs or {}
+            if "loss" not in logs and "eval_loss" not in logs:
+                return control
             self.writer.writerow(
                 {
                     "step": state.global_step,
@@ -155,31 +208,31 @@ def main() -> None:
     trainer = SFTTrainer(
         model=model,
         args=training_args,
-        train_dataset=Dataset.from_list([format_row(row) for row in train_rows]),
-        eval_dataset=Dataset.from_list([format_row(row) for row in val_rows]),
+        train_dataset=Dataset.from_list(train_text),
+        eval_dataset=Dataset.from_list(val_text),
         peft_config=peft,
         processing_class=tokenizer,
+        data_collator=collator,
         callbacks=[LossCSV()],
     )
     trainer.train(resume_from_checkpoint=args.resume_from_checkpoint)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     trainer.save_model(str(args.output_dir))
     tokenizer.save_pretrained(args.output_dir)
+
     import matplotlib.pyplot as plt
 
-    with Path("results/train_log.csv").open(encoding="utf-8") as stream:
+    with log_path.open(encoding="utf-8") as stream:
         log = list(csv.DictReader(stream))
-    steps = [int(row["step"]) for row in log]
     for key, label in (("train_loss", "train"), ("val_loss", "validation")):
-        pairs = [(step, float(row[key])) for step, row in zip(steps, log, strict=True) if row[key]]
+        pairs = [(int(r["step"]), float(r[key])) for r in log if r[key]]
         if pairs:
-            plt.plot([x[0] for x in pairs], [x[1] for x in pairs], label=label)
+            plt.plot([p[0] for p in pairs], [p[1] for p in pairs], label=label)
     plt.xlabel("Step")
     plt.ylabel("Loss")
     plt.legend()
     plt.tight_layout()
-    Path("results").mkdir(exist_ok=True)
-    plt.savefig("results/loss_curve.png")
+    plt.savefig(args.results_dir / "loss_curve.png")
     plt.close()
 
 
