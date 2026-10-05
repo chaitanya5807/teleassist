@@ -13,7 +13,9 @@ param(
     [string]$Backend = "",
     [switch]$SampleOnly,
     [int]$SampleCount = 10,
-    [int]$TargetCount = 2000
+    [int]$TargetCount = 2000,
+    [string]$CheckpointDir = "models/checkpoints",
+    [switch]$Smoke
 )
 
 Set-StrictMode -Version Latest
@@ -104,7 +106,11 @@ function Invoke-Task {
             if ($SampleOnly) { $BuilderArgs += @("--sample-only", "--sample-count", "$SampleCount") }
             & $Python @BuilderArgs
         }
-        "train" { Write-Host "not implemented until Phase 6" }
+        "train" {
+            $TrainArgs = @("-m", "teleassist.training.train_lora", "--config", (Join-Path $PSScriptRoot "configs\lora.yaml"), "--checkpoint-dir", $CheckpointDir)
+            if ($Smoke) { $TrainArgs += "--smoke" }
+            & $Python @TrainArgs
+        }
         "eval" { Write-Host "not implemented until Phase 7" }
         "report" { Write-Host "not implemented until Phase 7" }
         "serve" { Write-Host "not implemented until Phase 8" }

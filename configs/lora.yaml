@@ -7,7 +7,12 @@ target_modules:
   - v_proj
   - o_proj
 learning_rate: 0.0002
-epochs: 3
+epochs: 2
 schedule: cosine
 quantization: nf4
-
+model_name: Qwen/Qwen2.5-1.5B-Instruct
+smoke_model_name: Qwen/Qwen2.5-0.5B-Instruct
+train_batch_size: 2
+eval_batch_size: 2
+gradient_accumulation_steps: 8
+max_seq_length: 2048
