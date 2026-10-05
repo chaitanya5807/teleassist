@@ -11,6 +11,7 @@ from typing import Any
 import yaml
 
 from teleassist.generation.prompts import build_messages
+from teleassist.generation.question_generator import create_generator
 
 
 def _read(path: Path) -> list[dict[str, Any]]:
@@ -38,13 +39,28 @@ def main() -> None:
         if args.smoke
         else cfg.get("model_name", "Qwen/Qwen2.5-1.5B-Instruct")
     )
-    train_rows = _read(args.data_dir / "train.jsonl")
-    val_rows = _read(args.data_dir / "val.jsonl")
     if args.smoke:
-        train_rows, val_rows = (train_rows + val_rows)[:32], (train_rows + val_rows)[:8]
+        mock = create_generator("mock")
+        text = (
+            "Telecom customers can contact support to ask about recharge, billing, "
+            "and mobile network services."
+        )
+        sample = mock.generate(text, 1)[0]
+        context = [{"id": f"mock-{i}", "text": text} for i in range(32)]
+        train_rows = [
+            dict(sample, question=f"{sample['question']} Example {i}", context=context)
+            for i in range(24)
+        ]
+        val_rows = [
+            dict(sample, question=f"{sample['question']} Validation {i}", context=context)
+            for i in range(8)
+        ]
+    else:
+        train_rows = _read(args.data_dir / "train.jsonl")
+        val_rows = _read(args.data_dir / "val.jsonl")
     if not train_rows or not val_rows:
         raise ValueError("Training requires non-empty train.jsonl and val.jsonl")
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=args.smoke)
 
     def format_row(row: dict[str, Any]) -> dict[str, str]:
         messages = build_messages(row["question"], row.get("context", []))
@@ -64,6 +80,7 @@ def main() -> None:
         )
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
+        local_files_only=args.smoke,
         quantization_config=quant,
         device_map="auto" if quant else None,
         torch_dtype=torch.bfloat16

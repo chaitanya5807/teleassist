@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 from collections import Counter
 from typing import Any, Protocol
 
@@ -64,22 +65,27 @@ class OpenAICompatibleGenerator:
         url = self.base_url
         if not url.endswith("/chat/completions"):
             url += "/chat/completions"
-        response = requests.post(
-            url,
-            headers={"Authorization": f"Bearer {self.api_key}"},
-            json={
-                "model": self.model,
-                "temperature": 0.7,
-                "messages": [
-                    {"role": "system", "content": QUESTION_SYSTEM},
-                    {
-                        "role": "user",
-                        "content": f"Generate {n} items from this passage:\n{chunk_text}",
-                    },
-                ],
-            },
-            timeout=self.timeout,
-        )
+        for attempt in range(5):
+            response = requests.post(
+                url,
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                json={
+                    "model": self.model,
+                    "temperature": 0.7,
+                    "messages": [
+                        {"role": "system", "content": QUESTION_SYSTEM},
+                        {
+                            "role": "user",
+                            "content": f"Generate {n} items from this passage:\n{chunk_text}",
+                        },
+                    ],
+                },
+                timeout=self.timeout,
+            )
+            status_code = getattr(response, "status_code", 200)
+            if status_code not in {429, 500, 502, 503, 504} or attempt == 4:
+                break
+            time.sleep(min(2**attempt, 30))
         response.raise_for_status()
         content = response.json()["choices"][0]["message"]["content"]
         return _verify_evidence(_parse_items(content), chunk_text)[:n]

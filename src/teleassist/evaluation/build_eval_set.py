@@ -14,6 +14,7 @@ from typing import Any
 from teleassist.config import load_config
 from teleassist.generation.prompts import ABSTENTION
 from teleassist.generation.question_generator import QuestionGenerator, create_generator
+from teleassist.resumable import append_resumable
 from teleassist.retrieval.bm25 import BM25Index
 from teleassist.training.build_sft_data import (
     _too_similar,
@@ -346,7 +347,8 @@ def build_mock_samples(
     annotate_qa_quality(chunks)
     eval_sources = {doc["source"] for doc in split["eval_documents"]}
     candidates = [
-        chunk for chunk in chunks
+        chunk
+        for chunk in chunks
         if chunk.get("metadata", {}).get("source") in eval_sources
         and chunk.get("usable_for_qa", False)
     ]
@@ -385,7 +387,7 @@ def build_mock_samples(
         for chunk in family_chunks:
             by_source[str(chunk["metadata"]["source"])].append(chunk)
         for source_chunks in by_source.values():
-                pairs.extend(zip(source_chunks[::2], source_chunks[1::2], strict=False))
+            pairs.extend(zip(source_chunks[::2], source_chunks[1::2], strict=False))
         if len(pairs) < count:
             pairs.extend((family_chunks[0], other) for other in family_chunks[1:])
     rng.shuffle(pairs)
@@ -448,6 +450,8 @@ def main() -> None:
     parser.add_argument("--sample-only", action="store_true")
     parser.add_argument("--sample-count", type=int, default=10)
     parser.add_argument("--output", type=Path, default=Path("data/eval/eval_set.jsonl"))
+    parser.add_argument("--max-chunks", type=int, default=None)
+    parser.add_argument("--out-dir", type=Path, default=None)
     args = parser.parse_args()
     config = load_config(args.config)
     chunks = load_chunks(args.chunks)
@@ -471,6 +475,17 @@ def main() -> None:
         seed=config.seed,
         max_doc_share=config.max_doc_share_for_sampling,
     )
+    if args.max_chunks is not None or args.out_dir is not None:
+        out_dir = args.out_dir or args.output.parent
+        append_resumable(
+            chunks,
+            records,
+            out_dir=out_dir,
+            max_chunks=args.max_chunks,
+            chunk_ids=lambda record: record.get("gold_chunk_ids", []),
+            filename=args.output.name,
+        )
+        return
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         "".join(json.dumps(record, ensure_ascii=False) + "\n" for record in records),

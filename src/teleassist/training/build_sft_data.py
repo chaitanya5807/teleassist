@@ -14,6 +14,7 @@ from typing import Any
 
 from teleassist.config import load_config
 from teleassist.generation.question_generator import QuestionGenerator, create_generator
+from teleassist.resumable import append_resumable
 from teleassist.retrieval.bm25 import BM25Index
 
 NUMBER_PATTERN = re.compile(r"\d+(?:[.,/%:-]\d+)*")
@@ -170,19 +171,30 @@ def _get_context_candidates(
 def _unsupported_question_candidates() -> list[tuple[str, str]]:
     """Create a varied pool of plausible but unsupported feature questions."""
     features = [
-        "satellite emergency texting", "recharge refunds to a crypto wallet",
-        "mobile data exchanged for electricity credits", "screen damage insurance",
-        "rollover data shared with family members", "bank transfers from prepaid balance",
-        "automatic bill payments with reward points", "guaranteed indoor signal strength",
+        "satellite emergency texting",
+        "recharge refunds to a crypto wallet",
+        "mobile data exchanged for electricity credits",
+        "screen damage insurance",
+        "rollover data shared with family members",
+        "bank transfers from prepaid balance",
+        "automatic bill payments with reward points",
+        "guaranteed indoor signal strength",
         "international satellite calls on prepaid plans",
         "unused roaming minutes converted to cash",
-        "one year number suspension without a fee", "battery failure data reimbursement",
-        "combined bills across different operators", "free satellite phone handsets",
-        "SIM ownership transfer through a blockchain wallet", "home broadband outage insurance",
-        "mobile recharge paid in cryptocurrency", "phone theft replacement by TRAI",
-        "a fixed tariff for calls to the Moon", "unlimited data rollover across providers",
-        "free handset repairs for network outages", "electricity payments from phone balances",
-        "operator funded travel insurance", "guaranteed coverage inside every building",
+        "one year number suspension without a fee",
+        "battery failure data reimbursement",
+        "combined bills across different operators",
+        "free satellite phone handsets",
+        "SIM ownership transfer through a blockchain wallet",
+        "home broadband outage insurance",
+        "mobile recharge paid in cryptocurrency",
+        "phone theft replacement by TRAI",
+        "a fixed tariff for calls to the Moon",
+        "unlimited data rollover across providers",
+        "free handset repairs for network outages",
+        "electricity payments from phone balances",
+        "operator funded travel insurance",
+        "guaranteed coverage inside every building",
         "cash rewards for porting between networks",
     ]
     templates = [
@@ -511,6 +523,8 @@ def main() -> None:
     parser.add_argument("--sample-only", action="store_true")
     parser.add_argument("--sample-count", type=int, default=10)
     parser.add_argument("--output-dir", type=Path, default=Path("data/train"))
+    parser.add_argument("--max-chunks", type=int, default=None)
+    parser.add_argument("--out-dir", type=Path, default=None)
     args = parser.parse_args()
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(errors="replace")
@@ -533,9 +547,23 @@ def main() -> None:
         seed=config.seed,
         max_doc_share=config.max_doc_share_for_sampling,
     )
-    _write_jsonl(args.output_dir / "train.jsonl", train)
-    _write_jsonl(args.output_dir / "val.jsonl", val)
-    print(f"Wrote {len(train)} train and {len(val)} val samples to {args.output_dir}")
+    out_dir = args.out_dir or args.output_dir
+    if args.max_chunks is not None or args.out_dir is not None:
+        tagged = [{**row, "_output_file": "train.jsonl"} for row in train] + [
+            {**row, "_output_file": "val.jsonl"} for row in val
+        ]
+        append_resumable(
+            chunks,
+            tagged,
+            out_dir=out_dir,
+            max_chunks=args.max_chunks,
+            chunk_ids=lambda row: [str(p.get("id")) for p in row.get("context", [])],
+            filename=lambda row: row["_output_file"],
+        )
+    else:
+        _write_jsonl(out_dir / "train.jsonl", train)
+        _write_jsonl(out_dir / "val.jsonl", val)
+    print(f"Wrote {len(train)} train and {len(val)} val samples to {out_dir}")
 
 
 if __name__ == "__main__":
