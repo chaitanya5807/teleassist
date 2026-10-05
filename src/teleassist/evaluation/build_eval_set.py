@@ -14,7 +14,7 @@ from typing import Any
 from teleassist.config import load_config
 from teleassist.generation.prompts import ABSTENTION
 from teleassist.generation.question_generator import QuestionGenerator, create_generator
-from teleassist.resumable import append_resumable
+from teleassist.resumable import append_resumable, unprocessed_chunks
 from teleassist.retrieval.bm25 import BM25Index
 from teleassist.training.build_sft_data import (
     _too_similar,
@@ -456,17 +456,30 @@ def main() -> None:
     config = load_config(args.config)
     chunks = load_chunks(args.chunks)
     split = json.loads(args.split.read_text(encoding="utf-8"))
-    backend = args.backend or config.question_generator_backend
-    generator = create_generator(backend, model_name=config.models.question_generator)
     target_count = (
         min(args.sample_count * 7, args.target_count) if args.sample_only else args.target_count
     )
     if args.sample_only:
+        generator = create_generator(
+            args.backend or config.question_generator_backend,
+            model_name=config.models.question_generator,
+        )
         records = build_mock_samples(
             chunks, split, generator, count=args.sample_count, seed=config.seed
         )
         print_samples(records, args.sample_count)
         return
+    resumable = args.max_chunks is not None or args.out_dir is not None
+    out_dir = args.out_dir or args.output.parent
+    if resumable:
+        chunks = unprocessed_chunks(chunks, out_dir)
+        if not chunks:
+            print("All chunks are already processed.")
+            return
+    generator = create_generator(
+        args.backend or config.question_generator_backend,
+        model_name=config.models.question_generator,
+    )
     records = build_eval_set(
         chunks,
         split,
@@ -475,8 +488,7 @@ def main() -> None:
         seed=config.seed,
         max_doc_share=config.max_doc_share_for_sampling,
     )
-    if args.max_chunks is not None or args.out_dir is not None:
-        out_dir = args.out_dir or args.output.parent
+    if resumable:
         append_resumable(
             chunks,
             records,

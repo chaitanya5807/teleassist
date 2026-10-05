@@ -9,6 +9,15 @@ from pathlib import Path
 from typing import Any
 
 
+def unprocessed_chunks(chunks: list[dict[str, Any]], out_dir: Path) -> list[dict[str, Any]]:
+    """Return chunks not recorded in the output directory's progress ledger."""
+    progress_path = out_dir / "progress.json"
+    if not progress_path.exists():
+        return chunks
+    processed = set(json.loads(progress_path.read_text(encoding="utf-8"))["processed_chunk_ids"])
+    return [chunk for chunk in chunks if str(chunk["id"]) not in processed]
+
+
 def append_resumable(
     chunks: list[dict[str, Any]],
     records: list[dict[str, Any]],

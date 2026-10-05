@@ -3,7 +3,7 @@ import json
 from scripts.check_data_leakage import check_leakage
 from scripts.review_eval_set import review
 
-from teleassist.resumable import append_resumable
+from teleassist.resumable import append_resumable, unprocessed_chunks
 
 
 def test_review_tool_edits_and_saves_each_item(tmp_path):
@@ -73,24 +73,33 @@ def test_leakage_check_rejects_gold_from_eval_family():
 
 def test_resumable_mock_generation_stops_and_resumes_without_duplicates(tmp_path):
     chunks = [{"id": f"c{i}"} for i in range(10)]
-    records = [{"id": f"r{i}", "chunk_id": f"c{i}"} for i in range(10)]
+    calls = []
+
+    def generate(chunk):
+        calls.append(chunk["id"])
+        return {"id": f"r{chunk['id'][1:]}", "chunk_id": chunk["id"]}
+
     append_resumable(
         chunks,
-        records,
+        [generate(chunk) for chunk in chunks[:5]],
         out_dir=tmp_path,
         max_chunks=5,
         chunk_ids=lambda row: [row["chunk_id"]],
         filename="items.jsonl",
     )
+    assert calls == [f"c{i}" for i in range(5)]
     assert len((tmp_path / "items.jsonl").read_text(encoding="utf-8").splitlines()) == 5
+    resumed_chunks = unprocessed_chunks(chunks, tmp_path)
+    calls.clear()
     append_resumable(
-        chunks,
-        records,
+        resumed_chunks,
+        [generate(chunk) for chunk in resumed_chunks],
         out_dir=tmp_path,
         max_chunks=None,
         chunk_ids=lambda row: [row["chunk_id"]],
         filename="items.jsonl",
     )
+    assert calls == [f"c{i}" for i in range(5, 10)]
     lines = (tmp_path / "items.jsonl").read_text(encoding="utf-8").splitlines()
     assert len(lines) == 10
     assert len({json.loads(line)["id"] for line in lines}) == 10

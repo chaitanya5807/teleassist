@@ -14,7 +14,7 @@ from typing import Any
 
 from teleassist.config import load_config
 from teleassist.generation.question_generator import QuestionGenerator, create_generator
-from teleassist.resumable import append_resumable
+from teleassist.resumable import append_resumable, unprocessed_chunks
 from teleassist.retrieval.bm25 import BM25Index
 
 NUMBER_PATTERN = re.compile(r"\d+(?:[.,/%:-]\d+)*")
@@ -530,6 +530,13 @@ def main() -> None:
         sys.stdout.reconfigure(errors="replace")
     config = load_config(args.config)
     chunks = load_chunks(args.chunks)
+    resumable = args.max_chunks is not None or args.out_dir is not None
+    out_dir = args.out_dir or args.output_dir
+    if resumable:
+        chunks = unprocessed_chunks(chunks, out_dir)
+        if not chunks:
+            print("All chunks are already processed.")
+            return
     print_quality_report(chunks)
     split = json.loads(args.split.read_text(encoding="utf-8"))
     generator = create_generator(
@@ -547,8 +554,7 @@ def main() -> None:
         seed=config.seed,
         max_doc_share=config.max_doc_share_for_sampling,
     )
-    out_dir = args.out_dir or args.output_dir
-    if args.max_chunks is not None or args.out_dir is not None:
+    if resumable:
         tagged = [{**row, "_output_file": "train.jsonl"} for row in train] + [
             {**row, "_output_file": "val.jsonl"} for row in val
         ]
