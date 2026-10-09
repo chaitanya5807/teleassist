@@ -24,10 +24,13 @@ def _filter_by_length(
     rows: list[dict[str, str]], tokenizer: Any, max_len: int, name: str
 ) -> list[dict[str, str]]:
     """Drop examples longer than max_len so the answer is never truncated away."""
-    kept = [
-        r for r in rows if len(tokenizer(r["text"], add_special_tokens=False)["input_ids"]) <= max_len
-    ]
-    print(f"[{name}] kept {len(kept)} of {len(rows)} (dropped {len(rows) - len(kept)} over {max_len} tokens)")
+    kept = []
+    for row in rows:
+        n_tokens = len(tokenizer(row["text"], add_special_tokens=False)["input_ids"])
+        if n_tokens <= max_len:
+            kept.append(row)
+    dropped = len(rows) - len(kept)
+    print(f"[{name}] kept {len(kept)} of {len(rows)} (dropped {dropped} over {max_len} tokens)")
     if not kept:
         raise ValueError(f"No {name} examples fit in max_seq_length={max_len}")
     return kept
