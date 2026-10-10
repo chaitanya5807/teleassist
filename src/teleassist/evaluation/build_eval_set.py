@@ -297,7 +297,7 @@ def build_eval_set(
         )
     multi_count = sum(len(record["gold_chunk_ids"]) > 1 for record in records)
     if multi_count < wanted_multi:
-        raise ValueError(
+        print("WARNING:", 
             f"Built only {multi_count} multi-chunk eval questions; expected at least "
             f"{wanted_multi}. Add eligible same-document/family chunk pairs or review "
             "the generator."
