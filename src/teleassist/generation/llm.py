@@ -32,7 +32,11 @@ class LocalLLM:
         device = "cuda" if torch.cuda.is_available() else "cpu"
         kwargs: dict[str, Any] = {"device_map": "auto" if device == "cuda" else None}
         if device == "cuda" and self.load_in_4bit:
-            kwargs["quantization_config"] = BitsAndBytesConfig(load_in_4bit=True)
+            kwargs["quantization_config"] = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_compute_dtype=torch.float16,
+            )
         self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         model = AutoModelForCausalLM.from_pretrained(self.model_name, **kwargs)
         if device == "cpu":
