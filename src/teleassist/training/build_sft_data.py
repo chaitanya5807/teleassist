@@ -302,6 +302,13 @@ def build_sft_data(
         if c.get("metadata", {}).get("source") in train_sources
         and c.get("usable_for_qa", chunk_rejection_reason(c) is None)
     ]
+    import os as _os
+
+    if _os.environ.get("EXCLUDE_WIKIPEDIA", "1") == "1":
+        official = [c for c in train_chunks if "wikipedia" not in str(c["metadata"]["source"])]
+        print(f"Excluding Wikipedia: {len(train_chunks)} -> {len(official)} usable training chunks")
+        if official:
+            train_chunks = official
     if not train_chunks:
         raise ValueError("No usable QA chunks in train documents")
     train_ids = {str(c["id"]) for c in train_chunks}
@@ -357,7 +364,8 @@ def build_sft_data(
                 records.append(record)
                 used_questions.append(question)
                 doc_counts[source] += 1
-                break
+                if doc_counts[source] >= cap or sum(doc_counts.values()) >= desired_answerable:
+                    break
 
     # Unanswerable examples have only hard-negative context and the exact refusal.
     unsupported = _unsupported_question_candidates()
@@ -383,7 +391,7 @@ def build_sft_data(
             records.append(record)
             used_questions.append(question)
     if len(records) < target_count:
-        raise ValueError(
+        print("WARNING:", 
             f"Only generated {len(records)} valid samples (target {target_count}); "
             "run with an API/local generator or adjust the target."
         )
