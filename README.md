@@ -104,5 +104,7 @@ python -m streamlit run src\teleassist\serving\app.py
 
 The API's default index is the official-only one (`chunks_official.jsonl`, the same chunks without Wikipedia pages). The LoRA adapter is expected at `models/teleassist-lora`; use `generate=false` or turn off the LoRA toggle to run without it.
 
+Docker files (`Dockerfile`, `docker-compose.yml`) are provided for a CPU-only deployment but have not been tested.
+
 Tests: `python -m pytest`.
 
