@@ -74,6 +74,16 @@ The base model never writes citations, so its citation score is 0 by constructio
 - **A manual check of 8 random v1 answers** against their cited passages found 3 supported, 1 partly supported and 4 unsupported. The generator will sometimes cite a passage that does not contain its claim.
 - **Sensitivity to the index:** with Wikipedia chunks in the index, v1 refused 2 of 10 unanswerable questions. With the official-only index it refused 6 of 10, with no retraining. Removing Wikipedia was chosen after the first evaluation showed generic Wikipedia pages outranking regulation text for plain-worded questions. It is a corpus decision, but it was made after seeing results on this eval set.
 
+## Demo
+
+Retrieval only (no language model): the top five passages with document, year and family. The first request after starting the server loads the models and took about 40 seconds on the author's laptop.
+
+![Retrieval-only mode](docs/images/Hybrid_rerank_nongenerative.png)
+
+Generated answer with the LoRA adapter, running on a CPU (generation took about 2 minutes). The day counts in this answer come from retrieved passage [4], an MNP regulation chunk, but the answer cites [2], a Jio charter chunk that does not contain them, and its last sentence is not supported by any retrieved passage. This is the failure mode measured in the evaluation, which is why the UI always shows the retrieved passages.
+
+![Generated answer](docs/images/Hybrid_rerank_generative.png)
+
 ## Limitations
 
 - 43 evaluation questions: wide confidence intervals, and differences of one or two questions mean nothing.
