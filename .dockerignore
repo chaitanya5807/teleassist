@@ -1,0 +1,16 @@
+.venv
+.git
+__pycache__
+*.pyc
+data/raw
+data/train
+data/train_v1_wikipedia
+data/train_v2
+data/train_v2_before_filter
+data/eval
+models
+results
+reports
+docs
+tests
+scripts

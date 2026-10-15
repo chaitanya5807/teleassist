@@ -33,7 +33,7 @@ flowchart LR
 
 ## Data
 
-- **Corpus:** 19 official documents with usable text (TRAI regulations and amendments, the Telecommunications Act 2023, DoT KYC instructions, the TRAI consumer handbook, Airtel and Jio consumer charters, PIB press releases), giving 794 chunks. Draft and consultation papers were excluded. One operator charter (Vi) was a scanned PDF and was skipped. Wikipedia pages were part of the first corpus and were removed from the retrieval index after the first evaluation (see below).
+- **Corpus:** 18 official documents with usable text (TRAI regulations and amendments, the Telecommunications Act 2023, DoT KYC instructions, the TRAI consumer handbook, Airtel and Jio consumer charters, PIB press releases), giving 794 chunks. Draft and consultation papers were excluded. One operator charter (Vi) was a scanned PDF and was skipped. Wikipedia pages were part of the first corpus and were removed from the retrieval index after the first evaluation (see below).
 - **Evaluation set:** 43 questions, every one manually reviewed (33 answerable, 10 unanswerable, 1 needs two passages). Questions were drafted by a hosted LLM (Gemini), about 100 drafts were reduced to 43 during review, and many kept questions were rewritten. Questions come from document families that are not used for training.
 - **Training data:** 485 training and 106 validation examples built from official documents only, drafted by the same hosted LLM. v1 has 72 refusal examples. A near-duplicate filter removed training questions too similar to eval questions (maximum train/eval similarity after filtering: 0.69).
 
@@ -105,3 +105,4 @@ python -m streamlit run src\teleassist\serving\app.py
 The API's default index is the official-only one (`chunks_official.jsonl`, the same chunks without Wikipedia pages). The LoRA adapter is expected at `models/teleassist-lora`; use `generate=false` or turn off the LoRA toggle to run without it.
 
 Tests: `python -m pytest`.
+

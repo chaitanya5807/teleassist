@@ -1,0 +1,23 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      TELEASSIST_CHUNKS: data/processed/chunks_official.jsonl
+      TELEASSIST_INDEX: data/processed/dense_index_official.npz
+      TELEASSIST_ADAPTER: models/teleassist-lora
+    volumes:
+      - ./models:/app/models:ro
+      - hf-cache:/hf-cache
+  ui:
+    build: .
+    command: ["python", "-m", "streamlit", "run", "src/teleassist/serving/app.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
+    ports:
+      - "8501:8501"
+    environment:
+      TELEASSIST_API: http://api:8000
+    depends_on:
+      - api
+volumes:
+  hf-cache:
