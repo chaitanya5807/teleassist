@@ -49,7 +49,7 @@ class AskResponse(BaseModel):
     latency_ms: dict[str, float]
 
 
-def public_chunk(chunk: dict[str, Any], rank: int | None = None, chars: int = 300) -> dict[str, Any]:
+def public_chunk(chunk: dict[str, Any], rank: int | None = None, chars: int = 800) -> dict[str, Any]:
     meta = chunk.get("metadata", {})
     text = " ".join(str(chunk.get("text", "")).split())
     out = {
@@ -196,3 +196,4 @@ def create_app(service: Service | None = None) -> FastAPI:
 
 
 app = create_app()
+
