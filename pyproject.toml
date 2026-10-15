@@ -23,3 +23,7 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*" = ["E501", "E741", "E701", "E702"]
+"tests/*" = ["E501"]

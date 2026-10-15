@@ -1,4 +1,5 @@
-﻿import json, sys
+﻿import json
+
 dec = json.load(open("scripts/decisions.json", encoding="utf-8-sig"))
 path = "data/eval/eval_set.jsonl"
 items = [json.loads(l) for l in open(path, encoding="utf-8") if l.strip()]

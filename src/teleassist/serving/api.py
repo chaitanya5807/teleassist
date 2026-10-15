@@ -49,7 +49,9 @@ class AskResponse(BaseModel):
     latency_ms: dict[str, float]
 
 
-def public_chunk(chunk: dict[str, Any], rank: int | None = None, chars: int = 800) -> dict[str, Any]:
+def public_chunk(
+    chunk: dict[str, Any], rank: int | None = None, chars: int = 800
+) -> dict[str, Any]:
     meta = chunk.get("metadata", {})
     text = " ".join(str(chunk.get("text", "")).split())
     out = {
@@ -171,7 +173,11 @@ def create_app(service: Service | None = None) -> FastAPI:
                         citations=[],
                         invalid_citation_numbers=[],
                         retrieved=[public_chunk(c, i + 1) for i, c in enumerate(chunks)],
-                        latency_ms={"retrieval": round(ms, 1), "generation": 0.0, "total": round(ms, 1)},
+                        latency_ms={
+                            "retrieval": round(ms, 1),
+                            "generation": 0.0,
+                            "total": round(ms, 1),
+                        },
                     )
                 result = svc.get_rag().answer(req.question, mode=req.mode, use_lora=req.use_lora)
         except HTTPException:

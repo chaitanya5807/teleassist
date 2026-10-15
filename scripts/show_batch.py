@@ -1,4 +1,6 @@
-﻿import json, sys
+﻿import json
+import sys
+
 sys.stdout.reconfigure(errors="replace")
 start, count = int(sys.argv[1]), int(sys.argv[2])
 chunks = {}

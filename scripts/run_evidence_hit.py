@@ -1,5 +1,9 @@
-﻿import argparse, json, re
+﻿import argparse
+import json
+import re
+
 from teleassist.retrieval.pipeline import Retriever
+
 
 def read(p):
     return [json.loads(l) for l in open(p, encoding="utf-8-sig") if l.strip()]

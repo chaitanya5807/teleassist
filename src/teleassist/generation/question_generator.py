@@ -77,13 +77,16 @@ class OpenAICompatibleGenerator:
                             rec = json.loads(line)
                             cache[rec["key"]] = rec["items"]
             OpenAICompatibleGenerator._cache = cache
-        key = hashlib.sha256(f"{self.model}|{n}|{chunk_text}".encode("utf-8")).hexdigest()
+        key = hashlib.sha256(f"{self.model}|{n}|{chunk_text}".encode()).hexdigest()
         if key in cache:
             return cache[key]
         calls = getattr(OpenAICompatibleGenerator, "_calls", 0)
         cap = int(os.environ.get("MAX_API_CALLS", "0"))
         if cap and calls >= cap:
-            raise SystemExit(f"Stopped: reached MAX_API_CALLS={cap}. Answers so far are saved in {cache_path}.")
+            raise SystemExit(
+                f"Stopped: reached MAX_API_CALLS={cap}. "
+                f"Answers so far are saved in {cache_path}."
+            )
         OpenAICompatibleGenerator._calls = calls + 1
         url = self.base_url
         if not url.endswith("/chat/completions"):
@@ -127,7 +130,8 @@ class OpenAICompatibleGenerator:
         cache[key] = result
         os.makedirs(os.path.dirname(cache_path) or ".", exist_ok=True)
         with open(cache_path, "a", encoding="utf-8") as fh:
-            fh.write(json.dumps({"key": key, "preview": chunk_text[:120], "items": result}, ensure_ascii=False) + "\n")
+            record = {"key": key, "preview": chunk_text[:120], "items": result}
+            fh.write(json.dumps(record, ensure_ascii=False) + "\n")
         return result
 
 
