@@ -1,0 +1,3 @@
+| system | n_answerable | n_unanswerable | token_f1 | containment | retrieval_hit_at_5 | cited_gold_chunk | false_refusal | correct_refusal | unsupported_proxy | latency_mean_ms | latency_p95_ms |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| F_rag_hybrid_rerank_lora | 33 | 10 | 0.266 | 0.202 | 16/33 (48%) | 8/33 (24%) | 0/33 (0%) | 7/10 (70%) | 0.608 | 6569 | 7608 |
