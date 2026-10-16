@@ -74,6 +74,18 @@ The base model never writes citations, so its citation score is 0 by constructio
 - **A manual check of 8 random v1 answers** against their cited passages found 3 supported, 1 partly supported and 4 unsupported. The generator will sometimes cite a passage that does not contain its claim.
 - **Sensitivity to the index:** with Wikipedia chunks in the index, v1 refused 2 of 10 unanswerable questions. With the official-only index it refused 6 of 10, with no retraining. Removing Wikipedia was chosen after the first evaluation showed generic Wikipedia pages outranking regulation text for plain-worded questions. It is a corpus decision, but it was made after seeing results on this eval set.
 
+### Score-gate experiment (inference-time refusal)
+
+A simple rule that refuses when the top reranker score is below a threshold was tried after the fine-tuning results were known. The threshold was tuned on 306 training and validation questions (never on the eval set) and then run once on the eval set with the v1 adapter's predictions.
+
+| | LoRA v1 alone | LoRA v1 + score gate |
+|---|---|---|
+| Refused unanswerable questions (10) | 6 | 9 |
+| Refused when the evidence was not in the retrieved passages (16) | 0 | 6 |
+| Wrongly refused when the evidence was present (17) | 0 | 2 |
+
+The signal is weak: on the tuning questions the score separated the two groups only slightly better than chance (AUROC 0.58; 0.73 on the eval set), and with 43 questions these counts could easily shift by several. It is a modest, noisy effect and not a fix. The gate is not part of the default pipeline (`scripts/run_abstention_gate.py`).
+
 ## Demo
 
 Retrieval only (no language model): the top five passages with document, year and family. The first request after starting the server loads the models and took about 40 seconds on the author's laptop.
